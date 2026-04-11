@@ -1,0 +1,1615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arcane Tracer: AI Financial Fraud Detection and Network Intelligence</title>
+<meta name="description" content="Arcane Tracer monitors $2.1 trillion in federal spending. Based on the GAO's documented 20% fraud rate, an estimated $420 billion is at risk. We surface the patterns automatically.">
+<meta name="keywords" content="fraud detection, financial network analysis, government spending fraud, shell company detection, AI fraud intelligence, federal fraud, compliance tool, FinCEN">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://arcanetracer.com">
+<meta property="og:title" content="Arcane Tracer: Follow the Money">
+<meta property="og:description" content="$2.1T in federal spending monitored. $420B estimated at risk. 847 anomalies surfaced this week. Free for citizens.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Arcane Tracer: The money always leaves a trail.">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Arcane Tracer","applicationCategory":"BusinessApplication","description":"AI-powered financial fraud detection and network intelligence platform","url":"https://arcanetracer.com"}</script>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#050F1E;--deep:#081524;--dark-card:#0C1A2E;--dark-2:#0F2040;
+  --page:#F2F7FF;--surface:#FFFFFF;--surf-2:#EEF4FF;--surf-3:#E4EEFF;
+  --blue:#0057FF;--blue-b:#1A6AFF;--blue-dim:rgba(0,87,255,0.1);--blue-pale:#E8F0FF;--blue-glow:rgba(0,87,255,0.25);
+  --cyan:#00D4FF;--gold:#FFB700;
+  --crit:#FF2D55;--high:#FF6B00;--med:#F5A623;--low:#00C896;
+  --ink:#030B18;--ink-2:#162840;--ink-3:#3A5470;--ink-4:#7090B0;--ink-5:#B0C8E0;
+  --on-d:rgba(255,255,255,1);--on-d2:rgba(255,255,255,0.75);--on-d3:rgba(255,255,255,0.42);--on-d4:rgba(255,255,255,0.1);--on-d5:rgba(255,255,255,0.05);
+  --border:#D0DFF0;--bdr-dark:rgba(255,255,255,0.07);
+  --sh-sm:0 2px 12px rgba(3,11,24,0.07);--sh-md:0 4px 24px rgba(3,11,24,0.1);--sh-lg:0 8px 48px rgba(3,11,24,0.16);--sh-blue:0 4px 20px rgba(0,87,255,0.28);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--page);color:var(--ink);font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+.container{max-width:1160px;margin:0 auto;padding:0 32px;}
+a{text-decoration:none;}
+button{cursor:pointer;font-family:inherit;}
+
+/* TICKER */
+.ticker{background:var(--blue);height:30px;overflow:hidden;display:flex;align-items:center;}
+.ticker-track{display:flex;animation:ticker 55s linear infinite;white-space:nowrap;}
+@keyframes ticker{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+.ti{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:rgba(255,255,255,0.92);padding:0 28px;display:flex;align-items:center;gap:10px;}
+.td{width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,0.4);flex-shrink:0;}
+
+/* NAV */
+nav{background:var(--void);border-bottom:1px solid var(--bdr-dark);position:sticky;top:0;z-index:200;backdrop-filter:blur(12px);}
+.nav-i{display:flex;align-items:center;justify-content:space-between;height:62px;padding:0 32px;max-width:1400px;margin:0 auto;gap:20px;}
+/* Mobile menu button */
+.nav-burger{display:none;background:transparent;border:1px solid var(--bdr-dark);padding:8px 10px;cursor:pointer;flex-direction:column;gap:4px;flex-shrink:0;}
+.nav-burger span{display:block;width:18px;height:2px;background:var(--on-d3);transition:all .25s;}
+.nav-burger.open span:nth-child(1){transform:rotate(45deg) translate(4px,4px);}
+.nav-burger.open span:nth-child(2){opacity:0;}
+.nav-burger.open span:nth-child(3){transform:rotate(-45deg) translate(4px,-4px);}
+/* Mobile nav drawer */
+.nav-drawer{display:none;position:fixed;top:62px;left:0;right:0;bottom:0;background:var(--void);z-index:199;padding:32px 24px;border-top:1px solid var(--bdr-dark);overflow-y:auto;}
+.nav-drawer.open{display:flex;flex-direction:column;gap:8px;}
+.nav-drawer a{font-family:'DM Sans',sans-serif;font-size:18px;font-weight:600;color:var(--on-d2);padding:14px 0;border-bottom:1px solid var(--bdr-dark);display:block;transition:color .15s;}
+.nav-drawer a:last-child{border-bottom:none;}
+.nav-drawer a:hover{color:var(--blue);}
+.nav-drawer-actions{margin-top:28px;display:flex;flex-direction:column;gap:10px;}
+@media (max-width:768px){.nav-burger{display:flex;}}
+.logo{display:flex;flex-direction:column;gap:2px;line-height:1;flex-shrink:0;}
+.logo-a{font-family:'Exo 2',sans-serif;font-size:18px;font-weight:900;color:white;letter-spacing:5px;text-transform:uppercase;position:relative;}
+.logo-a::after{content:'';position:absolute;top:3px;right:-7px;width:4px;height:4px;background:var(--blue);}
+.logo-t{font-family:'Exo 2',sans-serif;font-size:9px;font-weight:600;color:var(--blue);letter-spacing:7px;text-transform:uppercase;}
+.nav-links{display:flex;gap:28px;list-style:none;}
+.nav-links a{font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:var(--on-d3);transition:color .2s;}
+.nav-links a:hover,.nav-links a.active{color:var(--on-d);}
+.nav-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.btn-coffee{display:flex;align-items:center;gap:7px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--on-d3);background:rgba(255,255,255,0.05);border:1px solid var(--bdr-dark);padding:7px 14px;transition:all .2s;white-space:nowrap;}
+.btn-coffee:hover{background:rgba(255,255,255,0.09);border-color:rgba(255,255,255,0.15);color:var(--on-d2);}
+.btn-ghost-nav{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--on-d3);background:transparent;border:1px solid var(--bdr-dark);padding:7px 16px;transition:all .2s;}
+.btn-ghost-nav:hover{border-color:rgba(0,87,255,0.5);color:var(--blue);}
+.btn-primary-nav{font-family:'Exo 2',sans-serif;font-size:13px;font-weight:700;color:white;background:var(--blue);border:none;padding:9px 22px;box-shadow:var(--sh-blue);letter-spacing:0.3px;transition:all .2s;}
+.btn-primary-nav:hover{background:var(--blue-b);transform:translateY(-1px);}
+
+/* HERO */
+.hero{background:var(--void);position:relative;overflow:hidden;}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,87,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,87,255,.05) 1px,transparent 1px);background-size:52px 52px;mask-image:radial-gradient(ellipse 120% 80% at 50% 0%,black 30%,transparent 100%);}
+.hero-gl{position:absolute;top:-10%;left:-5%;width:55%;height:110%;background:radial-gradient(ellipse,rgba(0,87,255,.07) 0%,transparent 65%);pointer-events:none;}
+.hero-gr{position:absolute;top:5%;right:-5%;width:45%;height:90%;background:radial-gradient(ellipse,rgba(0,212,255,.04) 0%,transparent 65%);pointer-events:none;}
+.hero-scan{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 0%,var(--cyan) 30%,var(--blue) 50%,var(--cyan) 70%,transparent 100%);opacity:.18;animation:scan 14s linear infinite;pointer-events:none;}
+@keyframes scan{0%{top:0;opacity:0;}4%{opacity:.18;}96%{opacity:.1;}100%{top:100%;opacity:0;}}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--low);animation:lpulse 2s ease-in-out infinite;flex-shrink:0;display:inline-block;}
+@keyframes lpulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,200,150,0.4);}50%{opacity:.6;box-shadow:0 0 0 5px rgba(0,200,150,0);}}
+
+.hero-inner{position:relative;z-index:2;display:grid;grid-template-columns:1fr 400px;gap:52px;align-items:start;padding:68px 32px 0;max-width:1400px;margin:0 auto;}
+.live-badge{display:inline-flex;align-items:center;gap:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--cyan);margin-bottom:22px;}
+.live-badge::before{content:'';width:18px;height:2px;background:var(--cyan);}
+.hero-title{font-family:'Exo 2',sans-serif;font-size:clamp(48px,5.5vw,82px);font-weight:900;line-height:.92;letter-spacing:-2px;color:var(--on-d);margin-bottom:22px;}
+.hero-title .hl{color:var(--blue-b);position:relative;display:inline-block;}
+.hero-title .hl::after{content:'trail.';position:absolute;left:0;top:0;color:var(--blue);filter:blur(22px);opacity:.4;pointer-events:none;}
+.hero-sub{font-family:'DM Sans',sans-serif;font-size:17px;color:var(--on-d3);line-height:1.75;max-width:440px;margin-bottom:36px;}
+
+/* Search */
+.search-wrap{margin-bottom:44px;}
+.search-label{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--on-d3);margin-bottom:10px;}
+.search-bar{display:flex;border:1.5px solid rgba(0,87,255,0.28);background:rgba(255,255,255,.04);transition:border-color .2s,box-shadow .2s;}
+.search-bar:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,87,255,.12);}
+.search-icon{width:46px;display:flex;align-items:center;justify-content:center;color:var(--blue);font-size:18px;flex-shrink:0;}
+.search-in{flex:1;background:transparent;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--on-d2);padding:14px 4px;}
+.search-in::placeholder{color:rgba(255,255,255,.22);}
+.search-go{background:var(--blue);color:white;font-family:'Exo 2',sans-serif;font-size:13px;font-weight:700;padding:0 24px;border:none;letter-spacing:.3px;white-space:nowrap;transition:background .2s;}
+.search-go:hover{background:var(--blue-b);}
+.search-hints{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.sh-label{font-family:'DM Sans',sans-serif;font-size:12px;color:rgba(255,255,255,.3);}
+.sh-tag{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--cyan);background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.15);padding:3px 10px;transition:all .15s;cursor:pointer;}
+.sh-tag:hover{background:rgba(0,212,255,.14);}
+#limit-banner{display:none;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.25);padding:12px 18px;margin:8px 0;}
+#limit-banner p{font-family:'DM Sans',sans-serif;font-size:13px;color:#F5C56A;line-height:1.5;}
+
+/* Stats */
+.hero-stats{display:flex;align-items:center;border-top:1px solid var(--bdr-dark);padding-top:28px;gap:0;}
+.hstat{padding-right:28px;margin-right:28px;border-right:1px solid var(--bdr-dark);}
+.hstat:last-child{border-right:none;padding-right:0;margin-right:0;}
+.hstat-val{font-family:'Exo 2',sans-serif;font-size:28px;font-weight:900;color:var(--on-d);letter-spacing:-1px;line-height:1;margin-bottom:3px;}
+.hstat-lbl{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--on-d3);}
+
+/* FEED PANEL */
+.feed-panel{background:var(--dark-card);border:1px solid var(--bdr-dark);box-shadow:0 32px 80px rgba(0,0,0,.4),0 0 0 1px rgba(0,87,255,.07);position:relative;overflow:hidden;align-self:stretch;}
+.feed-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--blue),var(--cyan),var(--blue),transparent);opacity:.65;}
+.feed-hd{padding:13px 18px;border-bottom:1px solid var(--bdr-dark);display:flex;align-items:center;justify-content:space-between;background:rgba(0,87,255,.06);}
+.feed-hd-title{font-family:'Exo 2',sans-serif;font-size:13px;font-weight:700;color:var(--cyan);letter-spacing:.5px;display:flex;align-items:center;gap:8px;}
+.feed-hd-live{display:flex;align-items:center;gap:5px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--on-d3);}
+.feed-upd{font-family:'DM Sans',sans-serif;font-size:11px;color:rgba(255,255,255,.2);padding:7px 18px;border-bottom:1px solid var(--bdr-dark);background:rgba(0,0,0,.15);}
+.feed-items{overflow-y:auto;max-height:490px;}
+.feed-items::-webkit-scrollbar{width:3px;}
+.feed-items::-webkit-scrollbar-thumb{background:rgba(0,87,255,.3);}
+
+/* ANOMALY CARD - clean redesign with tooltips */
+.fi{border-bottom:1px solid var(--bdr-dark);cursor:pointer;transition:background .15s;position:relative;}
+.fi:hover{background:rgba(255,255,255,.03);}
+.fi-risk-bar{position:absolute;left:0;top:0;bottom:0;width:3px;}
+.fi-risk-bar.crit{background:var(--crit);}
+.fi-risk-bar.high{background:var(--high);}
+.fi-risk-bar.med{background:var(--med);}
+.fi-body{padding:14px 16px 14px 20px;}
+.fi-row1{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:5px;}
+.fi-name{font-family:'Exo 2',sans-serif;font-size:13px;font-weight:700;color:var(--on-d);line-height:1.25;letter-spacing:.1px;}
+.fi-amount{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;white-space:nowrap;flex-shrink:0;}
+.fi-amount.crit{color:var(--crit);}
+.fi-amount.high{color:var(--high);}
+.fi-amount.med{color:var(--med);}
+.fi-row2{display:flex;align-items:center;gap:6px;margin-bottom:9px;}
+.fi-loc{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--on-d3);}
+.fi-sep{color:var(--bdr-dark);font-size:10px;}
+.fi-program{font-family:'DM Sans',sans-serif;font-size:11px;color:rgba(255,255,255,.25);}
+
+/* BADGE WITH TOOLTIP */
+.fi-badges{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px;}
+.fi-badge{font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;padding:3px 9px;position:relative;cursor:help;}
+.fi-badge.red{background:rgba(255,45,85,.1);color:#FF7090;border:1px solid rgba(255,45,85,.2);}
+.fi-badge.amber{background:rgba(245,166,35,.1);color:#F5C56A;border:1px solid rgba(245,166,35,.2);}
+.fi-badge.neutral{background:rgba(255,255,255,.05);color:rgba(255,255,255,.38);border:1px solid rgba(255,255,255,.09);}
+
+/* Tooltip - JS-driven, fixed to viewport so it escapes overflow containers */
+#at-tip{
+  position:fixed;
+  z-index:9999;
+  width:240px;
+  background:var(--void);
+  border:1px solid rgba(0,87,255,.35);
+  color:var(--on-d2);
+  font-family:'DM Sans',sans-serif;
+  font-size:12px;
+  font-weight:400;
+  line-height:1.55;
+  padding:11px 15px;
+  box-shadow:0 12px 32px rgba(0,0,0,.5),0 0 0 1px rgba(0,87,255,.08);
+  pointer-events:none;
+  display:none;
+  opacity:0;
+  transition:opacity .15s;
+}
+#at-tip.visible{opacity:1;}
+
+.fi-row3{display:flex;align-items:center;justify-content:space-between;}
+.fi-source{font-family:'DM Sans',sans-serif;font-size:10px;color:rgba(255,255,255,.18);}
+.fi-cta{font-family:'Exo 2',sans-serif;font-size:11px;font-weight:700;color:var(--blue-b);letter-spacing:.2px;transition:color .15s;}
+.fi-cta:hover{color:var(--cyan);}
+.feed-ft{padding:11px 18px;border-top:1px solid var(--bdr-dark);text-align:center;background:rgba(0,87,255,.04);}
+.feed-ft a{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--blue);transition:color .15s;}
+.feed-ft a:hover{color:var(--cyan);}
+
+/* Trust strip */
+.trust-strip{position:relative;z-index:2;border-top:1px solid var(--bdr-dark);margin-top:56px;}
+.trust-inner{display:flex;align-items:center;max-width:1400px;margin:0 auto;padding:0 32px;overflow-x:auto;}
+.trust-item{display:flex;align-items:center;gap:8px;padding:13px 22px;border-right:1px solid var(--bdr-dark);flex-shrink:0;white-space:nowrap;}
+.trust-item:first-child{padding-left:0;}
+.trust-item:last-child{border-right:none;}
+.trust-dot{width:4px;height:4px;border-radius:50%;background:var(--low);flex-shrink:0;}
+.trust-text{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--on-d3);}
+
+/* SECTION COMMONS */
+section{padding:88px 0;}
+.sec-tag{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--blue);margin-bottom:10px;display:flex;align-items:center;gap:10px;text-transform:uppercase;letter-spacing:1px;}
+.sec-tag::before{content:'';width:18px;height:2px;background:var(--blue);}
+.sec-title{font-family:'Exo 2',sans-serif;font-size:clamp(30px,4vw,46px);font-weight:900;letter-spacing:-1.5px;color:var(--ink);margin-bottom:14px;line-height:1.02;}
+.sec-title span{color:var(--blue);}
+.sec-sub{font-family:'DM Sans',sans-serif;font-size:16px;color:var(--ink-3);line-height:1.75;max-width:560px;margin-bottom:52px;}
+
+/* FRAUD EXPOSURE COUNTER - new section right below hero */
+.section-exposure{padding:72px 0;background:var(--void);position:relative;overflow:hidden;border-top:1px solid var(--bdr-dark);}
+.section-exposure::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(0,87,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,87,255,.04) 1px,transparent 1px);background-size:52px 52px;}
+.exposure-inner{position:relative;z-index:2;display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border:1px solid rgba(255,45,85,.15);background:rgba(255,45,85,.04);}
+.exp-col{padding:40px 44px;border-right:1px solid rgba(255,45,85,.12);}
+.exp-col:last-child{border-right:none;}
+.exp-label{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+.exp-val{font-family:'Exo 2',sans-serif;font-size:52px;font-weight:900;letter-spacing:-2px;line-height:1;margin-bottom:8px;}
+.exp-val.monitored{color:var(--on-d);}
+.exp-val.rate{color:var(--med);}
+.exp-val.exposed{color:var(--crit);}
+.exp-desc{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--on-d3);line-height:1.65;}
+.exp-source{font-family:'DM Sans',sans-serif;font-size:11px;color:rgba(255,255,255,.2);margin-top:10px;font-style:italic;}
+.exp-arrow{display:flex;align-items:center;justify-content:center;padding:40px 0;}
+.exp-arrow-inner{font-size:28px;color:rgba(255,45,85,.3);}
+
+/* WHY NOW */
+.section-why{background:var(--page);}
+.why-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.why-card{background:var(--surface);border:1px solid var(--border);padding:36px 32px;box-shadow:var(--sh-sm);}
+.why-num{font-family:'Exo 2',sans-serif;font-size:52px;font-weight:900;color:var(--blue-pale);line-height:1;margin-bottom:8px;letter-spacing:-2px;}
+.why-label{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--blue);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;}
+.why-text{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink-3);line-height:1.72;}
+.why-source{font-family:'DM Sans',sans-serif;font-size:11px;color:var(--ink-5);margin-top:12px;font-style:italic;}
+
+/* RED FLAG GUIDE - new section */
+.section-flags{background:var(--surf-2);}
+.section-flags .sec-tag{color:var(--blue);}
+.flags-intro{font-family:'DM Sans',sans-serif;font-size:16px;color:var(--ink-3);line-height:1.75;max-width:640px;margin-bottom:48px;}
+.flags-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+.flag-card{background:var(--surface);border:1px solid var(--border);padding:28px 32px;display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start;box-shadow:var(--sh-sm);transition:box-shadow .2s;}
+.flag-card:hover{box-shadow:var(--sh-md);}
+.flag-icon{width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.flag-icon.red{background:rgba(255,45,85,.08);border:1px solid rgba(255,45,85,.15);}
+.flag-icon.amber{background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.15);}
+.flag-icon.blue{background:var(--blue-pale);border:1px solid rgba(0,87,255,.15);}
+.flag-body{}
+.flag-tag{display:inline-block;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;padding:3px 10px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;}
+.flag-tag.red{background:rgba(255,45,85,.08);color:var(--crit);border:1px solid rgba(255,45,85,.18);}
+.flag-tag.amber{background:rgba(245,166,35,.08);color:var(--high);border:1px solid rgba(245,166,35,.18);}
+.flag-tag.blue{background:var(--blue-pale);color:var(--blue);border:1px solid rgba(0,87,255,.2);}
+.flag-title{font-family:'Exo 2',sans-serif;font-size:17px;font-weight:700;color:var(--ink);margin-bottom:8px;letter-spacing:-.2px;}
+.flag-what{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink-2);line-height:1.65;margin-bottom:8px;font-weight:500;}
+.flag-why{font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink-3);line-height:1.65;}
+
+/* CASE STUDY */
+.section-case{background:var(--void);position:relative;overflow:hidden;}
+.section-case::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(0,87,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,87,255,.04) 1px,transparent 1px);background-size:52px 52px;}
+.section-case .sec-tag{color:var(--cyan);}
+.section-case .sec-tag::before{background:var(--cyan);}
+.section-case .sec-title{color:var(--on-d);}
+.section-case .sec-sub{color:var(--on-d3);}
+.case-layout{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start;position:relative;z-index:2;}
+.case-story p{font-family:'DM Sans',sans-serif;font-size:15px;color:var(--on-d3);line-height:1.8;margin-bottom:16px;}
+.case-story strong{color:var(--on-d2);font-weight:600;}
+.hl-cyan{color:var(--cyan);}
+.case-conclusion{margin-top:28px;padding:20px 24px;border:1px solid rgba(0,200,150,.2);background:rgba(0,200,150,.05);}
+.case-conclusion p{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--on-d2);line-height:1.7;}
+.case-conclusion strong{color:var(--low);}
+.ct-item{display:grid;grid-template-columns:72px 1fr;gap:16px;position:relative;}
+.ct-item::before{content:'';position:absolute;left:71px;top:32px;bottom:-1px;width:1px;background:var(--bdr-dark);}
+.ct-item:last-child::before{display:none;}
+.ct-date{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--on-d3);padding-top:12px;text-align:right;line-height:1.4;}
+.ct-body{background:var(--dark-card);border:1px solid var(--bdr-dark);padding:14px 18px;margin-bottom:8px;}
+.ct-event{font-family:'Exo 2',sans-serif;font-size:13px;font-weight:700;color:var(--on-d);margin-bottom:4px;letter-spacing:.1px;}
+.ct-detail{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--on-d3);line-height:1.5;}
+.ct-badge{display:inline-flex;align-items:center;gap:5px;margin-top:6px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;padding:3px 10px;border:1px solid;}
+.ct-badge.caught{background:rgba(0,200,150,.08);border-color:rgba(0,200,150,.25);color:var(--low);}
+.ct-badge.missed{background:rgba(255,45,85,.08);border-color:rgba(255,45,85,.2);color:var(--crit);}
+
+/* GRAPH DEMO */
+.section-graph{background:var(--page);}
+.graph-wrap{background:var(--void);border:1px solid var(--border);box-shadow:var(--sh-lg);overflow:hidden;}
+.graph-bar{background:var(--deep);padding:10px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--bdr-dark);}
+.gbar-dots{display:flex;gap:5px;}
+.gbar-dot{width:10px;height:10px;border-radius:50%;}
+.gbar-url{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--bdr-dark);padding:5px 12px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--on-d3);display:flex;align-items:center;gap:6px;}
+.gbar-status{font-family:'DM Sans',sans-serif;font-size:11px;color:var(--low);}
+.graph-layout{display:grid;grid-template-columns:180px 1fr 260px;height:500px;}
+.gd-sidebar{background:var(--deep);border-right:1px solid var(--bdr-dark);padding:16px 0;overflow-y:auto;}
+.gd-sb-section{padding:0 12px;margin-bottom:24px;}
+.gd-sb-label{font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:rgba(255,255,255,.25);margin-bottom:8px;padding-left:4px;text-transform:uppercase;letter-spacing:.5px;}
+.gd-sb-item{display:flex;align-items:center;gap:8px;padding:8px;cursor:pointer;transition:background .15s;margin-bottom:1px;}
+.gd-sb-item:hover,.gd-sb-item.active{background:rgba(0,87,255,.12);}
+.gd-sb-item.active .gd-sb-text{color:var(--cyan);}
+.gd-sb-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.gd-sb-text{font-family:'DM Sans',sans-serif;font-size:12px;color:rgba(255,255,255,.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.gd-canvas{position:relative;background:var(--void);overflow:hidden;}
+.gd-canvas::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(0,87,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,87,255,.04) 1px,transparent 1px);background-size:40px 40px;}
+.gd-scan{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,255,.25),transparent);animation:scan 10s linear infinite;pointer-events:none;}
+.network-svg{position:absolute;inset:0;width:100%;height:100%;}
+.gd-statusbar{position:absolute;bottom:0;left:0;right:0;background:rgba(5,15,30,.9);border-top:1px solid var(--bdr-dark);padding:7px 16px;display:flex;align-items:center;gap:24px;}
+.gd-st-item{font-family:'DM Sans',sans-serif;font-size:11px;color:rgba(255,255,255,.3);display:flex;align-items:center;gap:5px;}
+.gd-st-live{width:5px;height:5px;border-radius:50%;background:var(--low);animation:lpulse 2s infinite;}
+.gd-intel{background:var(--dark-card);border-left:1px solid var(--bdr-dark);display:flex;flex-direction:column;overflow:hidden;}
+.gd-intel-hd{padding:12px 16px;border-bottom:1px solid var(--bdr-dark);background:rgba(0,87,255,.06);}
+.gd-intel-title{font-family:'Exo 2',sans-serif;font-size:12px;font-weight:700;color:var(--cyan);letter-spacing:.5px;}
+.gd-intel-feed{flex:1;overflow-y:auto;padding:10px;}
+.gd-ic{background:rgba(255,255,255,.03);border:1px solid var(--bdr-dark);padding:10px;margin-bottom:6px;}
+.gd-ic.alert{border-left:3px solid var(--crit);}
+.gd-ic.warn{border-left:3px solid var(--med);}
+.gd-ic.info{border-left:3px solid var(--low);}
+.gd-ic-tag{font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;margin-bottom:4px;}
+.gd-ic-tag.crit{color:var(--crit);}
+.gd-ic-tag.warn{color:var(--med);}
+.gd-ic-tag.info{color:var(--low);}
+.gd-ic-text{font-family:'DM Sans',sans-serif;font-size:12px;color:rgba(255,255,255,.55);line-height:1.5;}
+.gd-ic-text strong{color:rgba(255,255,255,.82);}
+.gd-ai-box{margin:8px;background:rgba(0,87,255,.07);border:1px solid rgba(0,87,255,.15);padding:12px;}
+.gd-ai-label{font-family:'Exo 2',sans-serif;font-size:11px;font-weight:700;color:var(--blue-b);margin-bottom:6px;letter-spacing:.3px;}
+.gd-ai-text{font-family:'DM Sans',sans-serif;font-size:12px;color:rgba(255,255,255,.52);line-height:1.6;}
+.gd-ai-text em{color:var(--cyan);font-style:normal;}
+@keyframes nodePulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+@keyframes ringExpand{0%{r:10;opacity:.6;}100%{r:26;opacity:0;}}
+@keyframes drawEdge{from{stroke-dashoffset:200;}to{stroke-dashoffset:0;}}
+.node-pulse{animation:nodePulse 3s ease-in-out infinite;}
+.node-ring{animation:ringExpand 2.5s ease-out infinite;}
+.edge-draw{stroke-dasharray:200;animation:drawEdge 1.5s ease both;}
+
+/* HOW IT WORKS */
+.section-how{background:var(--surf-2);}
+.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);overflow:hidden;}
+.how-card{background:var(--surface);padding:40px 32px;position:relative;overflow:hidden;transition:background .2s;}
+.how-card:hover{background:var(--surf-2);}
+.how-card::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--blue);transform:scaleX(0);transition:transform .3s;transform-origin:left;}
+.how-card:hover::after{transform:scaleX(1);}
+.how-num{font-family:'Exo 2',sans-serif;font-size:60px;font-weight:900;color:rgba(0,87,255,.06);line-height:1;margin-bottom:14px;letter-spacing:-2px;}
+.how-title{font-family:'Exo 2',sans-serif;font-size:19px;font-weight:700;color:var(--ink);margin-bottom:10px;letter-spacing:-.2px;}
+.how-desc{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink-3);line-height:1.72;}
+.how-chip{display:inline-block;margin-top:16px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--blue);border:1px solid var(--blue-pale);background:var(--blue-pale);padding:4px 12px;text-transform:uppercase;letter-spacing:.5px;}
+
+/* DATA SOURCES */
+.section-sources{background:var(--page);}
+.sources-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.source-card{background:var(--surface);border:1px solid var(--border);padding:20px;box-shadow:var(--sh-sm);}
+.source-status{display:flex;align-items:center;gap:6px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:var(--low);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+.source-status::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--low);flex-shrink:0;}
+.source-name{font-family:'Exo 2',sans-serif;font-size:15px;font-weight:700;color:var(--ink);margin-bottom:6px;letter-spacing:-.2px;}
+.source-desc{font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink-3);line-height:1.6;}
+
+/* ACCESS */
+.section-access{background:var(--void);position:relative;overflow:hidden;}
+.section-access::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(0,87,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,87,255,.04) 1px,transparent 1px);background-size:52px 52px;}
+.section-access .sec-tag{color:var(--cyan);}
+.section-access .sec-tag::before{background:var(--cyan);}
+.section-access .sec-title{color:var(--on-d);}
+.access-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;position:relative;z-index:2;margin-bottom:32px;}
+.access-card{background:var(--dark-card);border:1px solid var(--bdr-dark);padding:36px 28px;transition:border-color .2s;position:relative;}
+.access-card.featured{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue),0 0 40px rgba(0,87,255,.1);}
+.access-card.featured::before{content:'Most Requested';position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--blue);color:white;font-family:'DM Sans',sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;padding:3px 14px;white-space:nowrap;text-transform:uppercase;}
+.access-tier{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--cyan);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;}
+.access-name{font-family:'Exo 2',sans-serif;font-size:26px;font-weight:900;color:var(--on-d);letter-spacing:-.5px;margin-bottom:8px;}
+.access-who{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--on-d3);line-height:1.6;margin-bottom:20px;min-height:44px;}
+.access-features{list-style:none;margin-bottom:24px;}
+.access-features li{font-family:'DM Sans',sans-serif;font-size:13px;color:var(--on-d2);padding:7px 0;border-bottom:1px solid var(--bdr-dark);display:flex;align-items:flex-start;gap:8px;line-height:1.4;}
+.access-features li::before{content:'';width:4px;height:4px;background:var(--blue);border-radius:50%;flex-shrink:0;margin-top:6px;}
+.access-features li.dim{color:var(--on-d3);}
+.access-features li.dim::before{background:rgba(255,255,255,.2);}
+.abtn{display:block;text-align:center;font-family:'Exo 2',sans-serif;font-size:13px;font-weight:700;letter-spacing:.3px;padding:12px;border:none;width:100%;transition:all .2s;}
+.abtn-primary{background:var(--blue);color:white;box-shadow:var(--sh-blue);}
+.abtn-primary:hover{background:var(--blue-b);}
+.abtn-outline{background:transparent;color:var(--on-d2);border:1px solid var(--bdr-dark);}
+.abtn-outline:hover{border-color:var(--blue);color:var(--blue);}
+.access-contact{position:relative;z-index:2;background:var(--dark-card);border:1px solid var(--bdr-dark);padding:40px 48px;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start;}
+.ac-left h3{font-family:'Exo 2',sans-serif;font-size:26px;font-weight:800;color:var(--on-d);letter-spacing:-.5px;margin-bottom:10px;}
+.ac-left p{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--on-d3);line-height:1.72;}
+.form-row{margin-bottom:14px;}
+.form-label{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--on-d3);margin-bottom:6px;display:block;}
+.form-input{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--bdr-dark);padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--on-d2);outline:none;transition:border-color .2s;}
+.form-input:focus{border-color:var(--blue);}
+.form-input::placeholder{color:rgba(255,255,255,.2);}
+.form-select{
+  appearance:none;
+  cursor:pointer;
+  background-color:#0C1A2E;
+  color:var(--on-d2);
+  /* Custom dropdown arrow */
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%230057FF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 14px center;
+  padding-right:36px;
+}
+/* Ensure option elements are always readable regardless of OS theme */
+.form-select option{
+  background:#0C1A2E;
+  color:#FFFFFF;
+}
+
+/* ══════════════════════════════════════
+   MOBILE RESPONSIVE - all breakpoints
+══════════════════════════════════════ */
+
+/* Tablet: 1024px and below */
+@media (max-width:1024px){
+  .hero-inner{grid-template-columns:1fr;gap:36px;padding:48px 24px 0;}
+  .feed-panel{max-height:420px;}
+  .feed-items{max-height:320px;}
+  .why-grid{grid-template-columns:1fr 1fr;gap:12px;}
+  .flags-grid{grid-template-columns:1fr;}
+  .case-layout{grid-template-columns:1fr;}
+  .graph-layout{grid-template-columns:1fr;}
+  .gd-sidebar,.gd-intel{display:none;}
+  .sources-grid{grid-template-columns:repeat(2,1fr);}
+  .access-grid{grid-template-columns:1fr!important;}
+  .access-contact{grid-template-columns:1fr;gap:28px;}
+  .donate-box{grid-template-columns:1fr;gap:32px;}
+  .how-grid{grid-template-columns:1fr;}
+  .users-grid{grid-template-columns:1fr 1fr;}
+  .pricing-grid{grid-template-columns:1fr 1fr;}
+}
+
+/* Mobile: 768px and below */
+@media (max-width:768px){
+  /* Nav */
+  .nav-links{display:none;}
+  .nav-right .btn-ghost-nav{display:none;}
+  .nav-i{padding:0 16px;}
+  .btn-coffee{padding:6px 10px;font-size:12px;}
+  .btn-coffee span{display:none;}
+  .btn-primary-nav{padding:8px 16px;font-size:12px;}
+
+  /* Hero */
+  .hero-inner{padding:36px 16px 0;}
+  .hero-title{font-size:clamp(40px,10vw,60px);letter-spacing:-1.5px;}
+  .hero-sub{font-size:15px;}
+  .hero-stats{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--bdr-dark);}
+  .hstat{padding:16px 0;margin:0;border-right:none;border-bottom:1px solid var(--bdr-dark);}
+  .hstat:nth-child(odd){padding-right:12px;border-right:1px solid var(--bdr-dark);}
+  .hstat:nth-child(even){padding-left:12px;}
+  .hstat:nth-child(3),.hstat:nth-child(4){border-bottom:none;}
+  .hstat-val{font-size:24px;}
+  .search-in{font-size:14px;padding:12px 4px;}
+  .search-go{padding:0 16px;font-size:12px;}
+  .search-hints{display:none;}
+
+  /* Trust strip */
+  .trust-inner{flex-wrap:nowrap;overflow-x:auto;padding:0 16px;}
+  .trust-item{padding:12px 16px;}
+
+  /* Sections */
+  section{padding:56px 0;}
+  .container{padding:0 16px;}
+  .sec-title{font-size:clamp(26px,7vw,38px);letter-spacing:-1px;}
+  .sec-sub{font-size:14px;margin-bottom:32px;}
+
+  /* Fraud Exposure */
+  .exposure-inner{grid-template-columns:1fr;}
+  .exp-col{padding:28px 24px;border-right:none!important;border-bottom:1px solid rgba(255,45,85,.12);}
+  .exp-col:last-child{border-bottom:none;}
+  .exp-val{font-size:40px;}
+
+  /* Why grid */
+  .why-grid{grid-template-columns:1fr;gap:10px;}
+
+  /* Flags */
+  .flags-grid{grid-template-columns:1fr;gap:10px;}
+  .flag-card{grid-template-columns:1fr;gap:12px;}
+  .flag-icon{width:36px;height:36px;}
+
+  /* Case study */
+  .case-layout{grid-template-columns:1fr;gap:32px;}
+  .ct-item{grid-template-columns:60px 1fr;gap:10px;}
+  .ct-date{font-size:9px;}
+
+  /* Graph - hide sidebar and intel on mobile, show canvas only */
+  .graph-layout{grid-template-columns:1fr;height:320px;}
+  .gd-sidebar,.gd-intel{display:none;}
+  .gd-statusbar{flex-wrap:wrap;gap:10px;padding:8px 12px;}
+  .gd-st-item{font-size:10px;}
+
+  /* How grid */
+  .how-grid{grid-template-columns:1fr;background:transparent;border:none;gap:10px;}
+  .how-card{border:1px solid var(--border);}
+  .how-num{font-size:48px;}
+
+  /* Sources */
+  .sources-grid{grid-template-columns:1fr 1fr;gap:8px;}
+  .source-card{padding:16px;}
+  .source-name{font-size:13px;}
+
+  /* Access tiers */
+  .access-grid{grid-template-columns:1fr!important;gap:10px;}
+  .access-card{padding:28px 22px;}
+  .access-contact{grid-template-columns:1fr;padding:24px 20px;gap:24px;}
+  .ac-left h3{font-size:20px;}
+
+  /* Donate */
+  .donate-box{grid-template-columns:1fr;padding:32px 24px;gap:28px;}
+  .donate-amounts{gap:6px;}
+  .donate-amt{padding:8px 14px;font-size:14px;}
+
+  /* CTA */
+  .cta-box{padding:48px 24px;}
+  .cta-title{font-size:clamp(28px,8vw,44px);}
+  .cta-actions{flex-direction:column;gap:10px;}
+  .btn-p,.btn-o{width:100%;text-align:center;padding:14px 24px;}
+
+  /* Footer */
+  footer{padding:28px 16px 20px;}
+  .foot-i{flex-direction:column;gap:16px;}
+  .foot-links{flex-wrap:wrap;gap:12px;}
+  .foot-disclaimer{font-size:10px;padding:16px 0 0;}
+
+  /* Form */
+  .form-input{font-size:16px;} /* Prevents iOS zoom on focus */
+  .form-submit{padding:14px;}
+
+  /* Feed panel full width on mobile */
+  .feed-panel{max-height:none;}
+  .feed-items{max-height:380px;}
+}
+
+/* Small mobile: 480px and below */
+@media (max-width:480px){
+  .nav-i{height:56px;}
+  .logo-a{font-size:15px;letter-spacing:4px;}
+  .logo-t{font-size:8px;letter-spacing:5px;}
+  .btn-coffee{display:none;}
+  .hero-title{font-size:clamp(36px,11vw,52px);}
+  .ticker{height:26px;}
+  .ti{font-size:11px;padding:0 18px;}
+  .sources-grid{grid-template-columns:1fr;}
+  .users-grid{grid-template-columns:1fr;}
+  .how-card{padding:28px 22px;}
+  .cta-box{padding:36px 18px;}
+  .access-card{padding:24px 18px;}
+  .exposure-inner{border:none;background:transparent;}
+  .exp-col{border:1px solid rgba(255,45,85,.12);margin-bottom:8px;}
+}
+textarea.form-input{resize:vertical;min-height:80px;}
+.form-submit{font-family:'Exo 2',sans-serif;font-size:14px;font-weight:700;color:white;background:var(--blue);border:none;padding:13px 32px;box-shadow:var(--sh-blue);letter-spacing:.3px;transition:all .2s;width:100%;}
+.form-submit:hover{background:var(--blue-b);}
+.form-note{font-family:'DM Sans',sans-serif;font-size:12px;color:rgba(255,255,255,.25);margin-top:8px;text-align:center;}
+
+/* DONATE */
+.section-donate{background:var(--surf-2);}
+.donate-box{background:var(--surface);border:1px solid var(--border);padding:52px;display:grid;grid-template-columns:1fr 1fr;gap:52px;align-items:center;box-shadow:var(--sh-md);}
+.donate-left .sec-title{font-size:34px;margin-bottom:12px;}
+.donate-left p{font-family:'DM Sans',sans-serif;font-size:15px;color:var(--ink-3);line-height:1.75;margin-bottom:20px;}
+.donate-amounts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;}
+.donate-amt{font-family:'Exo 2',sans-serif;font-size:15px;font-weight:700;color:var(--ink-2);background:var(--surf-2);border:2px solid var(--border);padding:10px 20px;cursor:pointer;transition:all .2s;}
+.donate-amt:hover,.donate-amt.active{border-color:var(--blue);color:var(--blue);background:var(--blue-pale);}
+.bmc-btn{display:flex;align-items:center;justify-content:center;gap:10px;font-family:'Exo 2',sans-serif;font-size:14px;font-weight:700;color:white;background:var(--blue);border:none;padding:14px 32px;box-shadow:var(--sh-blue);letter-spacing:.3px;transition:all .2s;width:100%;cursor:pointer;}
+.bmc-btn:hover{background:var(--blue-b);transform:translateY(-1px);}
+.di-item{display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);}
+.di-item:last-child{border-bottom:none;}
+.di-icon{width:36px;height:36px;background:var(--blue-pale);display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid rgba(0,87,255,.12);}
+.di-text{font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink-3);line-height:1.5;}
+.di-text strong{color:var(--ink-2);font-weight:600;display:block;margin-bottom:2px;}
+
+/* CTA */
+.section-cta{background:var(--page);}
+.cta-box{background:var(--void);border:1px solid var(--bdr-dark);padding:72px;text-align:center;position:relative;overflow:hidden;}
+.cta-box::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(0,87,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,87,255,.04) 1px,transparent 1px);background-size:52px 52px;}
+.cta-box::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:60%;height:120%;background:radial-gradient(ellipse,rgba(0,87,255,.07) 0%,transparent 65%);pointer-events:none;}
+.corner{position:absolute;width:22px;height:22px;border-color:rgba(0,87,255,.3);border-style:solid;z-index:2;}
+.c-tl{top:18px;left:18px;border-width:2px 0 0 2px;}
+.c-tr{top:18px;right:18px;border-width:2px 2px 0 0;}
+.c-bl{bottom:18px;left:18px;border-width:0 0 2px 2px;}
+.c-br{bottom:18px;right:18px;border-width:0 2px 2px 0;}
+.cta-i{position:relative;z-index:2;}
+.cta-tag{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--cyan);margin-bottom:16px;text-transform:uppercase;letter-spacing:1px;}
+.cta-title{font-family:'Exo 2',sans-serif;font-size:clamp(32px,4.5vw,58px);font-weight:900;color:var(--on-d);letter-spacing:-2px;line-height:.95;margin-bottom:16px;}
+.cta-title span{color:var(--blue-b);}
+.cta-sub{font-family:'DM Sans',sans-serif;font-size:16px;color:var(--on-d3);margin-bottom:36px;}
+.cta-actions{display:flex;gap:12px;justify-content:center;align-items:center;}
+.btn-p{font-family:'Exo 2',sans-serif;font-size:15px;font-weight:700;color:white;background:var(--blue);border:none;padding:15px 36px;box-shadow:var(--sh-blue);letter-spacing:.3px;transition:all .2s;cursor:pointer;}
+.btn-p:hover{background:var(--blue-b);transform:translateY(-1px);}
+.btn-o{font-family:'Exo 2',sans-serif;font-size:15px;font-weight:700;color:var(--on-d2);background:transparent;border:2px solid var(--bdr-dark);padding:13px 36px;letter-spacing:.3px;transition:all .2s;cursor:pointer;}
+.btn-o:hover{border-color:rgba(255,255,255,.3);}
+
+/* FOOTER */
+footer{background:var(--void);border-top:1px solid var(--bdr-dark);padding:36px 32px 20px;}
+.foot-i{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:24px;}
+.foot-logo{font-family:'Exo 2',sans-serif;font-size:15px;font-weight:900;color:white;letter-spacing:4px;}
+.foot-logo span{color:var(--blue);}
+.foot-copy{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--on-d3);margin-top:4px;}
+.foot-links{display:flex;gap:20px;}
+.foot-links a{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--on-d3);transition:color .15s;text-transform:uppercase;letter-spacing:.5px;}
+.foot-links a:hover{color:var(--blue);}
+.foot-disclaimer{font-family:'DM Sans',sans-serif;font-size:11px;color:rgba(255,255,255,.2);line-height:1.65;max-width:1400px;margin:0 auto;padding:20px 0 0;border-top:1px solid var(--bdr-dark);}
+
+/* FADE IN */
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+.fi{animation:fadeUp .4s ease both;}
+.fi:nth-child(1){animation-delay:.1s;}
+.fi:nth-child(2){animation-delay:.2s;}
+.fi:nth-child(3){animation-delay:.3s;}
+.fi:nth-child(4){animation-delay:.4s;}
+.fi:nth-child(5){animation-delay:.5s;}
+</style>
+</head>
+<body>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-track">
+    <span class="ti"><span class="td"></span>$350M stolen from Minnesota meal program. 79 defendants. Fraud visible in public records from day one.</span>
+    <span class="ti"><span class="td"></span>DOJ 2025: $15 billion in fraud charges. Largest single year total on record.</span>
+    <span class="ti"><span class="td"></span>GAO: Up to $521 billion lost annually to government fraud. Data to catch it is public.</span>
+    <span class="ti"><span class="td"></span>847 high-risk anomalies detected this week. Updated daily from federal spending databases.</span>
+    <span class="ti"><span class="td"></span>Dissolved company in Baton Rouge continued billing Medicaid for 14 months after shutting down.</span>
+    <span class="ti"><span class="td"></span>Seven companies at one Minneapolis address received $2.8M in childcare assistance.</span>
+    <span class="ti"><span class="td"></span>$350M stolen from Minnesota meal program. 79 defendants. Fraud visible in public records from day one.</span>
+    <span class="ti"><span class="td"></span>DOJ 2025: $15 billion in fraud charges. Largest single year total on record.</span>
+    <span class="ti"><span class="td"></span>GAO: Up to $521 billion lost annually to government fraud. Data to catch it is public.</span>
+    <span class="ti"><span class="td"></span>847 high-risk anomalies detected this week. Updated daily from federal spending databases.</span>
+    <span class="ti"><span class="td"></span>Dissolved company in Baton Rouge continued billing Medicaid for 14 months after shutting down.</span>
+    <span class="ti"><span class="td"></span>Seven companies at one Minneapolis address received $2.8M in childcare assistance.</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-i">
+    <a href="/" class="logo" aria-label="Arcane Tracer">
+      <div class="logo-a">ARCANE</div>
+      <div class="logo-t">TRACER</div>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#feed" class="active">Live Feed</a></li>
+      <li><a href="#flags">How We Score Risk</a></li>
+      <li><a href="#case">Case Study</a></li>
+      <li><a href="#access">Get Access</a></li>
+    </ul>
+    <div class="nav-right">
+      <a href="#donate" class="btn-coffee">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="opacity:.7"><path d="M18.5 3H5.5C4.67 3 4 3.67 4 4.5v1C4 6.33 4.67 7 5.5 7h13c.83 0 1.5-.67 1.5-1.5v-1C20 3.67 19.33 3 18.5 3zM6 9v8c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V9H6zm9 4h-2v2h-2v-2H9v-2h2v-2h2v2h2v2z"/></svg>
+        <span>Support This Project</span>
+      </a>
+      <a href="#" class="btn-ghost-nav">Sign In</a>
+      <button class="btn-primary-nav" onclick="scroll('access')">Get Access</button>
+      <button class="nav-burger" id="nav-burger" aria-label="Menu" onclick="toggleMobileNav()">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- MOBILE NAV DRAWER -->
+<div class="nav-drawer" id="nav-drawer">
+  <a href="#feed" onclick="closeMobileNav()">Live Feed</a>
+  <a href="#flags" onclick="closeMobileNav()">How We Score Risk</a>
+  <a href="#case" onclick="closeMobileNav()">Case Study</a>
+  <a href="#how" onclick="closeMobileNav()">How It Works</a>
+  <a href="#access" onclick="closeMobileNav()">Get Access</a>
+  <a href="#donate" onclick="closeMobileNav()">Support the Mission</a>
+  <div class="nav-drawer-actions">
+    <button class="btn-primary-nav" style="width:100%;padding:14px;font-size:15px;" onclick="closeMobileNav();scroll('access')">Get Access</button>
+    <button class="btn-ghost-nav" style="width:100%;padding:13px;font-size:14px;text-align:center;">Sign In</button>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero" aria-label="Hero">
+  <div class="hero-grid"></div>
+  <div class="hero-gl"></div>
+  <div class="hero-gr"></div>
+  <div class="hero-scan"></div>
+  <div class="hero-inner">
+    <div>
+      <div class="live-badge"><div class="live-dot"></div>Live Federal Fraud Intelligence</div>
+      <h1 class="hero-title">The money<br>always leaves<br>a <span class="hl">trail.</span></h1>
+      <p class="hero-sub">Arcane Tracer monitors $2.1 trillion in federal spending and maps financial networks in real time, surfacing fraud risk before investigators know where to look.</p>
+      <div class="search-wrap">
+        <div class="search-label">Investigate any entity, person, or address</div>
+        <div class="search-bar" role="search">
+          <div class="search-icon">⌕</div>
+          <input class="search-in" id="search-input" type="text" placeholder="Search a company name, person, or address..." aria-label="Search">
+          <button class="search-go" onclick="handleSearch()">Search</button>
+        </div>
+        <div id="limit-banner"><p>You have reached the daily search limit for free access. Request Professional access below for unlimited investigations, or try again tomorrow.</p></div>
+        <div class="search-hints">
+          <span class="sh-label">Try:</span>
+          <button class="sh-tag" onclick="setSearch(this)">Feeding Our Future MN</button>
+          <button class="sh-tag" onclick="setSearch(this)">Nova Care Partners FL</button>
+          <button class="sh-tag" onclick="setSearch(this)">Sunrise Community Services Miami</button>
+        </div>
+      </div>
+      <div class="hero-stats">
+        <div class="hstat">
+          <div class="hstat-val">$2.1T</div>
+          <div class="hstat-lbl">Federal spending monitored</div>
+        </div>
+        <div class="hstat">
+          <div class="hstat-val">847</div>
+          <div class="hstat-lbl">Anomalies this week</div>
+        </div>
+        <div class="hstat">
+          <div class="hstat-val">50+</div>
+          <div class="hstat-lbl">Public data sources</div>
+        </div>
+        <div class="hstat">
+          <div class="hstat-val">100%</div>
+          <div class="hstat-lbl">Public data only</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FEED PANEL -->
+    <aside class="feed-panel" id="feed" aria-label="Live anomaly feed">
+      <div class="feed-hd">
+        <div class="feed-hd-title"><div class="live-dot"></div>Today's Anomalies</div>
+        <div class="feed-hd-live"><div class="live-dot"></div>Live</div>
+      </div>
+      <div class="feed-upd">Updated 4 minutes ago &nbsp;·&nbsp; April 8, 2026 &nbsp;·&nbsp; USASpending.gov</div>
+      <div class="feed-items">
+
+        <article class="fi fi-crit">
+          <div class="fi-risk-bar crit"></div>
+          <div class="fi-body">
+            <div class="fi-row1">
+              <div class="fi-name">Sunrise Community Services LLC</div>
+              <div class="fi-amount crit" style="font-family:'JetBrains Mono',monospace;">$3,100,000</div>
+            </div>
+            <div class="fi-row2">
+              <span class="fi-loc">Miami, FL</span>
+              <span class="fi-sep">·</span>
+              <span class="fi-program">HHS Federal Housing</span>
+            </div>
+            <div class="fi-badges">
+              <span class="fi-badge red" data-tip="This company was incorporated just 4 months ago. Legitimate businesses receiving millions in federal funds typically have years of operating history. New entities formed right before receiving large payments are a known fraud pattern.">New company (4 months old)</span>
+              <span class="fi-badge red" data-tip="One legal contact is responsible for 847 different companies. When hundreds of entities receiving similar government payments share a single registered agent, it suggests these companies were mass-created together, not independently built businesses.">Agent: 847 entities</span>
+              <span class="fi-badge neutral" data-tip="This entity has no record of ever receiving government money before. Their very first interaction with the federal government is a multi-million dollar payment. Legitimate contractors typically build a track record over time.">No prior contracts</span>
+            </div>
+            <div class="fi-row3">
+              <span class="fi-source">USASpending.gov · OpenCorporates FL</span>
+              <a href="#" class="fi-cta">View Network</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="fi fi-crit">
+          <div class="fi-risk-bar crit"></div>
+          <div class="fi-body">
+            <div class="fi-row1">
+              <div class="fi-name">7 Entities · 1440 NW 54th St Minneapolis</div>
+              <div class="fi-amount crit" style="font-family:'JetBrains Mono',monospace;">$2,800,000</div>
+            </div>
+            <div class="fi-row2">
+              <span class="fi-loc">Minneapolis, MN</span>
+              <span class="fi-sep">·</span>
+              <span class="fi-program">CCAP Childcare Assistance</span>
+            </div>
+            <div class="fi-badges">
+              <span class="fi-badge red" data-tip="Seven separate companies are all legally registered at exactly the same address. While some legitimate businesses share office space, having seven companies all receiving government childcare payments from one location is a documented shell network pattern.">7 companies, 1 address</span>
+              <span class="fi-badge amber" data-tip="All seven of these companies were legally formed within a 60-day window. This suggests they were created in coordination, likely timed around when this government program opened for applications.">All formed within 60 days</span>
+            </div>
+            <div class="fi-row3">
+              <span class="fi-source">USASpending.gov · OpenCorporates MN</span>
+              <a href="#" class="fi-cta">View Network</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="fi fi-high">
+          <div class="fi-risk-bar high"></div>
+          <div class="fi-body">
+            <div class="fi-row1">
+              <div class="fi-name">Meridian Health Solutions Inc</div>
+              <div class="fi-amount high" style="font-family:'JetBrains Mono',monospace;">$880,000</div>
+            </div>
+            <div class="fi-row2">
+              <span class="fi-loc">Baton Rouge, LA</span>
+              <span class="fi-sep">·</span>
+              <span class="fi-program">Medicaid / CMS</span>
+            </div>
+            <div class="fi-badges">
+              <span class="fi-badge red" data-tip="The state of Louisiana officially dissolved this company in February 2024, meaning it legally no longer exists as an operating business. Despite this, it has continued to receive government Medicaid payments every month since. A dissolved company has no legal standing to bill for services.">Company officially dissolved</span>
+              <span class="fi-badge amber" data-tip="14 months have passed since this company was dissolved by the state, yet payments have continued uninterrupted. This means either the billing system has not been updated, or someone is actively submitting fraudulent claims on behalf of a company that no longer legally exists.">Still billing 14 months later</span>
+            </div>
+            <div class="fi-row3">
+              <span class="fi-source">USASpending.gov · Louisiana SOS</span>
+              <a href="#" class="fi-cta">View Network</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="fi fi-crit">
+          <div class="fi-risk-bar crit"></div>
+          <div class="fi-body">
+            <div class="fi-row1">
+              <div class="fi-name">Nova Care Partners LLC</div>
+              <div class="fi-amount crit" style="font-family:'JetBrains Mono',monospace;">$1,440,000</div>
+            </div>
+            <div class="fi-row2">
+              <span class="fi-loc">Houston, TX</span>
+              <span class="fi-sep">·</span>
+              <span class="fi-program">Medicaid</span>
+            </div>
+            <div class="fi-badges">
+              <span class="fi-badge red" data-tip="This company was formed only 2 months ago and is already receiving $1.4M in Medicaid payments. Healthcare providers typically require extensive licensing, credentialing, and vetting before receiving federal healthcare funds. A 2-month-old company receiving this amount immediately is a serious anomaly.">2 months old</span>
+              <span class="fi-badge red" data-tip="The registered agent for this company also manages 312 other companies in Texas. Many of those companies are in the same healthcare space and also receive Medicaid payments. This strongly suggests coordinated creation of multiple billing entities by a single operator.">Agent: 312 TX entities</span>
+            </div>
+            <div class="fi-row3">
+              <span class="fi-source">USASpending.gov · Texas SOS</span>
+              <a href="#" class="fi-cta">View Network</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="fi fi-med">
+          <div class="fi-risk-bar med"></div>
+          <div class="fi-body">
+            <div class="fi-row1">
+              <div class="fi-name">Apex Regional Services Group</div>
+              <div class="fi-amount med" style="font-family:'JetBrains Mono',monospace;">$620,000</div>
+            </div>
+            <div class="fi-row2">
+              <span class="fi-loc">Atlanta, GA</span>
+              <span class="fi-sep">·</span>
+              <span class="fi-program">HUD Housing Assistance</span>
+            </div>
+            <div class="fi-badges">
+              <span class="fi-badge amber" data-tip="The US Treasury's OFAC list names individuals and companies sanctioned for financial crimes, money laundering, or sanctions violations. This company shares officers and addresses with two entities on that list. While not itself sanctioned, the connection raises significant compliance concerns.">Connected to OFAC-listed entities</span>
+              <span class="fi-badge amber" data-tip="Three companies that were subsidiaries of this entity were dissolved within the past 18 months. This pattern, where a parent company continues operating while subsidiaries are created and dissolved, is sometimes used to shift liability or obscure financial flows.">3 dissolved subsidiaries</span>
+            </div>
+            <div class="fi-row3">
+              <span class="fi-source">USASpending.gov · OFAC SDN · SEC EDGAR</span>
+              <a href="#" class="fi-cta">View Network</a>
+            </div>
+          </div>
+        </article>
+
+      </div>
+      <div class="feed-ft"><a href="#">View all 847 anomalies detected this week</a></div>
+    </aside>
+  </div>
+
+  <!-- Trust strip -->
+  <div class="trust-strip">
+    <div class="trust-inner">
+      <div class="trust-item"><div class="trust-dot"></div><div class="trust-text">100% public data only</div></div>
+      <div class="trust-item"><div class="trust-dot"></div><div class="trust-text">No account required to view</div></div>
+      <div class="trust-item"><div class="trust-dot"></div><div class="trust-text">Every claim sourced and cited</div></div>
+      <div class="trust-item"><div class="trust-dot"></div><div class="trust-text">Analysis, not accusation</div></div>
+      <div class="trust-item"><div class="trust-dot"></div><div class="trust-text">Updated daily</div></div>
+      <div class="trust-item" style="border-right:none;"><div class="trust-dot"></div><div class="trust-text">Free for every citizen</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FRAUD EXPOSURE COUNTER -->
+<section class="section-exposure">
+  <div class="container">
+    <div class="exposure-inner">
+      <div class="exp-col">
+        <div class="exp-label">Federal Spending Monitored</div>
+        <div class="exp-val monitored">$2.1T</div>
+        <div class="exp-desc">Arcane Tracer monitors the full scope of federal spending reported through USASpending.gov: contracts, grants, loans, and direct payments across all 11 federal agencies.</div>
+        <div class="exp-source">Source: USASpending.gov DATA Act reporting</div>
+      </div>
+      <div class="exp-col" style="display:flex;align-items:center;justify-content:center;padding:40px;border-right:1px solid rgba(255,45,85,.12);">
+        <div style="text-align:center;">
+          <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--on-d3);margin-bottom:8px;">GAO documented fraud rate</div>
+          <div class="exp-val rate" style="font-size:64px;">20%</div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--on-d3);margin-top:8px;">of federal spending is estimated to be fraudulent, according to Congressional testimony from fraud detection experts.</div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:11px;color:rgba(255,255,255,.2);margin-top:10px;font-style:italic;">Source: House DOGE Subcommittee, 2025</div>
+        </div>
+      </div>
+      <div class="exp-col">
+        <div class="exp-label">Estimated Annual Fraud Exposure</div>
+        <div class="exp-val exposed">~$420B</div>
+        <div class="exp-desc">Applying the GAO's documented 20% fraud rate to the spending we monitor suggests approximately $420 billion in annual exposure, money that may be going to fraudulent claims, shell companies, and bad actors.</div>
+        <div class="exp-source">Estimate based on GAO reporting · Not a confirmed fraud total</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY NOW -->
+<section class="section-why">
+  <div class="container">
+    <div class="sec-tag">The Problem</div>
+    <h2 class="sec-title">Fraud is at an <span>all-time high</span></h2>
+    <p class="sec-sub">The data to catch government fraud has always been public. The tool to connect it automatically has not existed until now.</p>
+    <div class="why-grid">
+      <div class="why-card">
+        <div class="why-num">$521B</div>
+        <div class="why-label">Maximum Annual Fraud Loss</div>
+        <div class="why-text">The GAO estimates between $233 billion and $521 billion is lost annually to fraud in federal programs. Medicare, Medicaid, and government assistance programs are the most exposed. This is taxpayer money that should be funding real services for real people.</div>
+        <div class="why-source">Source: Government Accountability Office, 2025</div>
+      </div>
+      <div class="why-card">
+        <div class="why-num">20%</div>
+        <div class="why-label">Government Fraud Rate</div>
+        <div class="why-text">Expert testimony to Congress documented the federal fraud rate at approximately 20% compared to just 3% in the private sector. The difference is simple: private companies use automated detection. Most federal agencies do not have the tools to do this automatically.</div>
+        <div class="why-source">Source: House DOGE Subcommittee Testimony, 2025</div>
+      </div>
+      <div class="why-card">
+        <div class="why-num">$350M</div>
+        <div class="why-label">One State. One Program.</div>
+        <div class="why-text">The Feeding Our Future scandal in Minnesota stole $350 million from a single federal meal program. It ran for three years before investigators manually mapped the network. Every public record needed to catch it was available from day one. No automated tool was in place to connect them.</div>
+        <div class="why-source">Source: DOJ USAO-MN, 2025</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RED FLAG GUIDE -->
+<section class="section-flags" id="flags">
+  <div class="container">
+    <div class="sec-tag">How We Score Risk</div>
+    <h2 class="sec-title">What the warning signs<br><span>actually mean</span></h2>
+    <p class="flags-intro">When Arcane Tracer flags an entity, it shows specific risk signals in plain English. Here is what each signal means, why it matters, and what it tells investigators to look at next. Hover over any badge in the feed above to see the explanation inline.</p>
+    <div class="flags-grid">
+
+      <div class="flag-card">
+        <div class="flag-icon red"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#FF2D55" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h12"/><path d="M4 21V11l5-6 5 6v10"/><rect x="7.5" y="14" width="3" height="7"/><circle cx="18.5" cy="7" r="3.5"/><path d="M18.5 5.5V7l1.5 1.5"/></svg></div>
+        <div class="flag-body">
+          <span class="flag-tag red">High Risk</span>
+          <div class="flag-title">Very New Company</div>
+          <div class="flag-what">This entity was incorporated within the last 6 months and is already receiving large federal payments.</div>
+          <div class="flag-why">Legitimate businesses receiving millions in government funds typically have years of operating history, staff, facilities, and a track record. A brand new company receiving large amounts immediately suggests it may have been created specifically to capture government funds before proper vetting could occur. The Feeding Our Future case involved dozens of LLCs created within weeks of a new program opening.</div>
+        </div>
+      </div>
+
+      <div class="flag-card">
+        <div class="flag-icon red"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#FF2D55" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.5"/><circle cx="4" cy="5" r="1.5"/><circle cx="20" cy="5" r="1.5"/><circle cx="4" cy="19" r="1.5"/><circle cx="20" cy="19" r="1.5"/><circle cx="12" cy="3" r="1.5"/><line x1="12" y1="9.5" x2="5" y2="6"/><line x1="12" y1="9.5" x2="19" y2="6"/><line x1="12" y1="14.5" x2="5" y2="18"/><line x1="12" y1="14.5" x2="19" y2="18"/><line x1="12" y1="9.5" x2="12" y2="4.5"/></svg></div>
+        <div class="flag-body">
+          <span class="flag-tag red">High Risk</span>
+          <div class="flag-title">Registered Agent Manages Hundreds of Entities</div>
+          <div class="flag-what">The legal contact on file for this company is also the registered agent for hundreds of other companies in the same space.</div>
+          <div class="flag-why">A registered agent is the official legal representative of a company. When one agent manages hundreds of companies that all receive similar government payments, it strongly suggests these companies were mass-created in coordination rather than independently built. In the Minnesota case, a single registered agent was connected to over 40 shell entities that collectively defrauded the government of tens of millions.</div>
+        </div>
+      </div>
+
+      <div class="flag-card">
+        <div class="flag-icon red"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#FF2D55" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22V13l5-5 5 5v9"/><path d="M12 22V10l5-5 5 5v12"/><rect x="4.5" y="16" width="2" height="3"/><rect x="14.5" y="14" width="2" height="4"/><line x1="2" y1="22" x2="22" y2="22"/></svg></div>
+        <div class="flag-body">
+          <span class="flag-tag red">High Risk</span>
+          <div class="flag-title">Multiple Companies at One Address</div>
+          <div class="flag-what">Several companies receiving government payments are all legally registered at the exact same physical address.</div>
+          <div class="flag-why">While legitimate businesses sometimes share office space, having many companies all receiving similar government payments from one address is a known fraud indicator. It suggests the companies are not truly independent operations but a cluster of entities set up to claim funds from the same program. Seven entities at one Minneapolis address collectively received $2.8 million in childcare assistance.</div>
+        </div>
+      </div>
+
+      <div class="flag-card">
+        <div class="flag-icon red"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#FF2D55" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h14"/><path d="M4 21V11l6-7 6 7v10"/><rect x="7.5" y="14" width="3.5" height="7"/><line x1="16" y1="5" x2="22" y2="11"/><line x1="22" y1="5" x2="16" y2="11"/></svg></div>
+        <div class="flag-body">
+          <span class="flag-tag red">High Risk</span>
+          <div class="flag-title">Company Is Dissolved but Still Billing</div>
+          <div class="flag-what">State records show this company was legally dissolved, meaning it no longer officially exists, but federal payments are still being made to it.</div>
+          <div class="flag-why">When a company is dissolved by the state it has no legal standing to operate, employ people, or provide services. Payments continuing to a dissolved entity indicate either a billing system failure, which is serious on its own, or that someone is actively submitting fraudulent claims on behalf of a company that technically no longer exists. Both require immediate investigation.</div>
+        </div>
+      </div>
+
+      <div class="flag-card">
+        <div class="flag-icon amber"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#F5A623" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="3" x2="5" y2="21"/><path d="M5 3h13l-2.5 5L18 13H5"/><line x1="11" y1="9" x2="11" y2="6"/><circle cx="11" cy="11" r="0.8" fill="#F5A623"/></svg></div>
+        <div class="flag-body">
+          <span class="flag-tag amber">Elevated Risk</span>
+          <div class="flag-title">Connected to OFAC-Listed Entities</div>
+          <div class="flag-what">This company shares officers, addresses, or registered agents with entities on the US Treasury's OFAC sanctions list.</div>
+          <div class="flag-why">The OFAC Specially Designated Nationals list names individuals and companies sanctioned for financial crimes, money laundering, narcotics trafficking, and terrorism financing. A company is not itself sanctioned for having connections to OFAC entities, but those connections are required to be disclosed and evaluated. For compliance officers, this flag triggers mandatory enhanced due diligence under federal regulations.</div>
+        </div>
+      </div>
+
+      <div class="flag-card">
+        <div class="flag-icon amber"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#F5A623" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="14" rx="1"/><line x1="3" y1="9" x2="17" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="12" y1="2" x2="12" y2="6"/><circle cx="19" cy="17" r="3.5"/><path d="M19 15.5V17l1 1"/></svg></div>
+        <div class="flag-body">
+          <span class="flag-tag amber">Elevated Risk</span>
+          <div class="flag-title">Coordinated Incorporation Window</div>
+          <div class="flag-what">Multiple companies in this cluster were all legally formed within a very short period, typically 30 to 90 days, right before a government program opened for applications.</div>
+          <div class="flag-why">Independent businesses form organically over time based on market opportunities. When multiple companies serving the same government program all appear within weeks of each other, it suggests they were created in response to that specific program. This is the defining pattern of large-scale government benefit fraud: rapid entity creation timed to capture new funding streams before oversight systems are in place.</div>
+        </div>
+      </div>
+
+      <div class="flag-card">
+        <div class="flag-icon blue"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#0057FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1z"/><path d="M8 4H6a1 1 0 0 0-1 1v15a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/><line x1="9" y1="8" x2="9.01" y2="8"/></svg></div>
+        <div class="flag-body">
+          <span class="flag-tag blue">Notable</span>
+          <div class="flag-title">No Prior Government Contracts</div>
+          <div class="flag-what">This company has never previously received any federal money. Their very first interaction with the government is a large payment.</div>
+          <div class="flag-why">This flag by itself is not necessarily suspicious. Every business has a first contract. But when combined with other signals like very new incorporation or a shared registered agent, having no prior contract history means there is no track record to evaluate whether this company has ever actually delivered what it claims to provide. It means due diligence must start from scratch with no baseline to compare against.</div>
+        </div>
+      </div>
+
+      <div class="flag-card">
+        <div class="flag-icon blue"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#0057FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="21" x2="21" y2="21"/><rect x="4" y="15" width="3" height="6"/><rect x="10.5" y="10" width="3" height="11"/><rect x="17" y="4" width="3" height="17"/><polyline points="5.5,12 12,7.5 18.5,3"/><polyline points="16,3 18.5,3 18.5,5.5"/></svg></div>
+        <div class="flag-body">
+          <span class="flag-tag blue">Notable</span>
+          <div class="flag-title">Sudden Large Increase in Payments</div>
+          <div class="flag-what">This entity's payment amounts have increased dramatically, often 10 times or more, within a short period with no corresponding change in documented activity.</div>
+          <div class="flag-why">Legitimate business growth tends to scale gradually. When a company goes from receiving small amounts to millions very quickly without any visible expansion in operations, staff, or documented service delivery, it raises questions about whether the increased billing reflects real services rendered. The Feeding Our Future case saw payments grow from $3.4M to over $100M per year in under 24 months.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CASE STUDY -->
+<section class="section-case" id="case">
+  <div class="container">
+    <div class="sec-tag">Case Study</div>
+    <h2 class="sec-title">What Arcane Tracer would<br><span style="color:var(--cyan)">have caught and when</span></h2>
+    <p class="sec-sub">The Feeding Our Future fraud stole $350 million from a federal meal program and ran for three years. Every signal was in public data from the beginning. Here is the timeline.</p>
+    <div class="case-layout">
+      <div class="case-story">
+        <p>Feeding Our Future was a nonprofit founded in 2016. It applied repeatedly to the Minnesota Department of Education for grants and was rejected each time for <strong>mismanagement and irregularities</strong>. The IRS revoked its nonprofit status in February 2020.</p>
+        <p>When COVID-19 pandemic relief funding opened with intentionally low barriers to entry, <strong>the organization began receiving millions in federal meal program payments almost immediately</strong>. Within months it was processing tens of millions per month through a growing network of shell sites.</p>
+        <p>By 2022, federal investigators uncovered a network of <strong>79 connected entities</strong>: shared registered agents, overlapping officers, shell distribution sites. All of it traceable through public records that had been available since the first payment was made.</p>
+        <p>The fraud ran for three years. Not because the data was hidden. <span class="hl-cyan">Because no one had a tool to connect it automatically.</span></p>
+        <div class="case-conclusion">
+          <p><strong>Arcane Tracer's anomaly detection would have flagged Feeding Our Future on its very first federal payment</strong>. This was a nonprofit with revoked IRS status, previously rejected for mismanagement, suddenly receiving millions. The full 79-entity network would have been mappable within minutes.</p>
+        </div>
+      </div>
+      <div class="case-timeline">
+        <div class="ct-item"><div class="ct-date" style="font-family:'JetBrains Mono',monospace;">Feb 2020</div><div><div class="ct-body"><div class="ct-event">IRS Revokes Nonprofit Status</div><div class="ct-detail">Feeding Our Future loses tax-exempt status. A public record immediately visible in IRS business filings.</div><div class="ct-badge caught">Arcane Tracer flags this immediately</div></div></div></div>
+        <div class="ct-item"><div class="ct-date" style="font-family:'JetBrains Mono',monospace;">Mar 2020</div><div><div class="ct-body"><div class="ct-event">First Federal Payments Begin</div><div class="ct-detail">Entity with revoked IRS status starts receiving USDA meal program funds. USASpending.gov records this in real time.</div><div class="ct-badge caught">Anomaly feed surfaces this on day one</div></div></div></div>
+        <div class="ct-item"><div class="ct-date" style="font-family:'JetBrains Mono',monospace;">Late 2020</div><div><div class="ct-body"><div class="ct-event">Shell Network Begins Forming</div><div class="ct-detail">Dozens of LLCs registered across Minnesota at shared addresses with the same registered agents in rapid succession.</div><div class="ct-badge caught">Network graph maps the cluster automatically</div></div></div></div>
+        <div class="ct-item"><div class="ct-date" style="font-family:'JetBrains Mono',monospace;">2021</div><div><div class="ct-body"><div class="ct-event">Payments Scale to $42M Per Year</div><div class="ct-detail">Federal payments balloon from $2.6M estimated to $42M actual with no automated detection in place anywhere.</div><div class="ct-badge missed">No tool existed to connect the data</div></div></div></div>
+        <div class="ct-item"><div class="ct-date" style="font-family:'JetBrains Mono',monospace;">Jan 2022</div><div><div class="ct-body"><div class="ct-event">FBI Raids After Years of Manual Work</div><div class="ct-detail">After years of manual investigation, FBI raids locations. Over $250M has already been stolen by this point.</div><div class="ct-badge caught">Arcane Tracer would have caught this in 2020</div></div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- GRAPH DEMO -->
+<section class="section-graph">
+  <div class="container">
+    <div class="sec-tag">Live Demo</div>
+    <h2 class="sec-title">The network graph <span>in action</span></h2>
+    <p class="sec-sub" style="margin-bottom:32px;">This is what an investigation looks like inside Arcane Tracer. Every connection is sourced from a public record.</p>
+    <div class="graph-wrap">
+      <div class="graph-bar">
+        <div class="gbar-dots"><div class="gbar-dot" style="background:#FF5F56"></div><div class="gbar-dot" style="background:#FFBD2E"></div><div class="gbar-dot" style="background:#27C93F"></div></div>
+        <div class="gbar-url"><span>🔒</span> app.arcanetracer.com / investigate / shell-cascade-demo</div>
+        <div class="gbar-status">● Active Scan</div>
+      </div>
+      <div class="graph-layout">
+        <div class="gd-sidebar">
+          <div class="gd-sb-section">
+            <div class="gd-sb-label">Workspace</div>
+            <div class="gd-sb-item active"><div class="gd-sb-dot" style="background:var(--cyan)"></div><div class="gd-sb-text">Network Graph</div></div>
+            <div class="gd-sb-item"><div class="gd-sb-dot" style="background:var(--blue)"></div><div class="gd-sb-text">Intel Briefs (3)</div></div>
+            <div class="gd-sb-item"><div class="gd-sb-dot" style="background:rgba(255,255,255,.2)"></div><div class="gd-sb-text">All Entities</div></div>
+            <div class="gd-sb-item"><div class="gd-sb-dot" style="background:rgba(255,255,255,.2)"></div><div class="gd-sb-text">Court Filings</div></div>
+          </div>
+          <div class="gd-sb-section">
+            <div class="gd-sb-label">Active Investigation</div>
+            <div class="gd-sb-item"><div class="gd-sb-dot" style="background:var(--crit)"></div><div class="gd-sb-text">Shell Cascade</div></div>
+            <div class="gd-sb-item"><div class="gd-sb-dot" style="background:var(--med)"></div><div class="gd-sb-text">Apex Holdings</div></div>
+            <div class="gd-sb-item"><div class="gd-sb-dot" style="background:var(--low)"></div><div class="gd-sb-text">Maritime LLC</div></div>
+          </div>
+          <div class="gd-sb-section">
+            <div class="gd-sb-label">Data Sources Active</div>
+            <div class="gd-sb-item"><div class="gd-sb-dot" style="background:var(--low)"></div><div class="gd-sb-text">OpenCorporates</div></div>
+            <div class="gd-sb-item"><div class="gd-sb-dot" style="background:var(--low)"></div><div class="gd-sb-text">USASpending</div></div>
+            <div class="gd-sb-item"><div class="gd-sb-dot" style="background:var(--low)"></div><div class="gd-sb-text">OFAC SDN List</div></div>
+            <div class="gd-sb-item"><div class="gd-sb-dot" style="background:var(--low)"></div><div class="gd-sb-text">SEC EDGAR</div></div>
+            <div class="gd-sb-item"><div class="gd-sb-dot" style="background:var(--low)"></div><div class="gd-sb-text">CourtListener</div></div>
+          </div>
+        </div>
+        <div class="gd-canvas">
+          <div class="gd-scan"></div>
+          <svg class="network-svg" viewBox="0 0 600 440" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="gB" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#0057FF" stop-opacity="0.18"/><stop offset="100%" stop-color="#0057FF" stop-opacity="0"/></radialGradient>
+              <radialGradient id="gR" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#FF2D55" stop-opacity="0.22"/><stop offset="100%" stop-color="#FF2D55" stop-opacity="0"/></radialGradient>
+              <marker id="arr" markerWidth="5" markerHeight="5" refX="2.5" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" fill="rgba(0,87,255,0.35)"/></marker>
+              <marker id="arrR" markerWidth="5" markerHeight="5" refX="2.5" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" fill="rgba(255,45,85,0.5)"/></marker>
+            </defs>
+            <pattern id="g" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(0,87,255,0.04)" stroke-width="0.5"/></pattern>
+            <rect width="100%" height="100%" fill="url(#g)"/>
+            <ellipse cx="300" cy="220" rx="68" ry="68" fill="url(#gB)" opacity=".9"/>
+            <ellipse cx="140" cy="130" rx="44" ry="44" fill="url(#gR)" opacity=".8"/>
+            <ellipse cx="460" cy="140" rx="38" ry="38" fill="url(#gR)" opacity=".65"/>
+            <line x1="300" y1="220" x2="140" y2="130" stroke="rgba(255,45,85,0.28)" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrR)" class="edge-draw"/>
+            <line x1="300" y1="220" x2="460" y2="140" stroke="rgba(255,45,85,0.28)" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrR)" class="edge-draw" style="animation-delay:.3s"/>
+            <line x1="300" y1="220" x2="170" y2="340" stroke="rgba(0,87,255,0.22)" stroke-width="1" stroke-dasharray="3,4" marker-end="url(#arr)" class="edge-draw" style="animation-delay:.6s"/>
+            <line x1="300" y1="220" x2="440" y2="330" stroke="rgba(0,87,255,0.22)" stroke-width="1" stroke-dasharray="3,4" marker-end="url(#arr)" class="edge-draw" style="animation-delay:.9s"/>
+            <line x1="300" y1="220" x2="300" y2="80" stroke="rgba(0,87,255,0.18)" stroke-width="1" stroke-dasharray="2,4"/>
+            <line x1="300" y1="220" x2="520" y2="260" stroke="rgba(0,87,255,0.18)" stroke-width="1" stroke-dasharray="2,4"/>
+            <line x1="300" y1="220" x2="80" y2="268" stroke="rgba(0,87,255,0.18)" stroke-width="1" stroke-dasharray="2,4"/>
+            <line x1="140" y1="130" x2="68" y2="68" stroke="rgba(255,45,85,0.18)" stroke-width="1" stroke-dasharray="2,3"/>
+            <line x1="460" y1="140" x2="534" y2="74" stroke="rgba(255,45,85,0.2)" stroke-width="1" stroke-dasharray="2,3"/>
+            <circle cx="300" cy="220" r="29" fill="#0C1A2E" stroke="#0057FF" stroke-width="1.5"/>
+            <circle cx="300" cy="220" r="7" fill="#0057FF" class="node-pulse"/>
+            <circle cx="300" cy="220" r="10" fill="none" stroke="#0057FF" stroke-width="1" class="node-ring" opacity="0"/>
+            <text x="300" y="260" text-anchor="middle" font-family="Exo 2" font-size="9" fill="#0057FF" font-weight="700">SHELL CASCADE</text>
+            <text x="300" y="271" text-anchor="middle" font-family="DM Sans" font-size="7" fill="rgba(0,87,255,.45)">Target Entity</text>
+            <circle cx="140" cy="130" r="20" fill="#0C1A2E" stroke="#FF2D55" stroke-width="1.5"/>
+            <circle cx="140" cy="130" r="6" fill="#FF2D55" class="node-pulse" style="animation-delay:.5s"/>
+            <circle cx="140" cy="130" r="8" fill="none" stroke="#FF2D55" stroke-width="1" opacity="0"><animate attributeName="r" values="8;18;8" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite"/></circle>
+            <text x="140" y="161" text-anchor="middle" font-family="Exo 2" font-size="8" fill="#FF2D55" font-weight="700">CAYMAN LLC</text>
+            <text x="140" y="171" text-anchor="middle" font-family="DM Sans" font-size="7" fill="rgba(255,45,85,.5)">Offshore · Flagged</text>
+            <circle cx="460" cy="140" r="18" fill="#0C1A2E" stroke="#FF2D55" stroke-width="1.5"/>
+            <circle cx="460" cy="140" r="5" fill="#FF2D55" opacity=".85" class="node-pulse" style="animation-delay:1s"/>
+            <text x="460" y="169" text-anchor="middle" font-family="Exo 2" font-size="8" fill="#FF2D55" font-weight="700">APEX MGMT</text>
+            <text x="460" y="179" text-anchor="middle" font-family="DM Sans" font-size="7" fill="rgba(255,45,85,.5)">OFAC Adjacent</text>
+            <circle cx="170" cy="340" r="13" fill="#0C1A2E" stroke="rgba(0,87,255,.42)" stroke-width="1"/><circle cx="170" cy="340" r="4" fill="rgba(0,87,255,.65)"/>
+            <text x="170" y="360" text-anchor="middle" font-family="DM Sans" font-size="7" fill="rgba(0,87,255,.65)">Meridian RE</text>
+            <circle cx="440" cy="330" r="13" fill="#0C1A2E" stroke="rgba(0,87,255,.42)" stroke-width="1"/><circle cx="440" cy="330" r="4" fill="rgba(0,87,255,.65)"/>
+            <text x="440" y="350" text-anchor="middle" font-family="DM Sans" font-size="7" fill="rgba(0,87,255,.65)">Nova Trust</text>
+            <circle cx="300" cy="80" r="10" fill="#0C1A2E" stroke="rgba(0,87,255,.32)" stroke-width="1"/><circle cx="300" cy="80" r="3" fill="rgba(0,87,255,.5)"/>
+            <text x="300" y="68" text-anchor="middle" font-family="DM Sans" font-size="7" fill="rgba(0,87,255,.55)">Hargrove</text>
+            <circle cx="520" cy="260" r="10" fill="#0C1A2E" stroke="rgba(0,87,255,.28)" stroke-width="1"/><circle cx="520" cy="260" r="3" fill="rgba(0,87,255,.45)"/>
+            <text x="520" y="248" text-anchor="middle" font-family="DM Sans" font-size="7" fill="rgba(0,87,255,.48)">Sable</text>
+            <circle cx="80" cy="268" r="10" fill="#0C1A2E" stroke="rgba(0,87,255,.25)" stroke-width="1"/><circle cx="80" cy="268" r="3" fill="rgba(0,87,255,.42)"/>
+            <text x="80" y="256" text-anchor="middle" font-family="DM Sans" font-size="7" fill="rgba(0,87,255,.45)">Pinebrook</text>
+            <circle cx="68" cy="68" r="7" fill="#0C1A2E" stroke="rgba(255,45,85,.32)" stroke-width="1"/><circle cx="68" cy="68" r="2" fill="rgba(255,45,85,.55)"/>
+            <circle cx="534" cy="74" r="7" fill="#0C1A2E" stroke="rgba(255,45,85,.32)" stroke-width="1"/><circle cx="534" cy="74" r="2" fill="rgba(255,45,85,.55)"/>
+            <rect x="14" y="14" width="118" height="64" fill="rgba(8,15,28,.92)" rx="2" stroke="rgba(0,87,255,.1)" stroke-width="1"/>
+            <circle cx="26" cy="30" r="4" fill="#0057FF"/><text x="35" y="34" font-family="DM Sans" font-size="8" fill="rgba(0,87,255,.75)">Known Entity</text>
+            <circle cx="26" cy="46" r="4" fill="#FF2D55"/><text x="35" y="50" font-family="DM Sans" font-size="8" fill="rgba(255,45,85,.75)">Flagged High Risk</text>
+            <line x1="19" y1="62" x2="33" y2="62" stroke="rgba(0,87,255,.4)" stroke-width="1.5" stroke-dasharray="3,2"/>
+            <text x="38" y="66" font-family="DM Sans" font-size="8" fill="rgba(0,87,255,.48)">Financial Link</text>
+            <rect x="454" y="14" width="132" height="24" fill="rgba(8,15,28,.92)" rx="2" stroke="rgba(0,87,255,.08)" stroke-width="1"/>
+            <text x="468" y="30" font-family="DM Sans" font-size="9" fill="rgba(0,87,255,.75)">14 entities · 23 connections</text>
+          </svg>
+          <div class="gd-statusbar">
+            <div class="gd-st-item"><div class="gd-st-live"></div>Scan Active</div>
+            <div class="gd-st-item">2 anomalies detected</div>
+            <div class="gd-st-item">14 entities found</div>
+            <div class="gd-st-item" style="margin-left:auto;">Updated 23 seconds ago</div>
+          </div>
+        </div>
+        <div class="gd-intel">
+          <div class="gd-intel-hd"><div class="gd-intel-title">Intelligence Feed</div></div>
+          <div class="gd-intel-feed">
+            <div class="gd-ic alert"><div class="gd-ic-tag crit">Critical Alert</div><div class="gd-ic-text"><strong>Cayman LLC</strong> linked through 3 layered transfers. Offshore jurisdiction flagged by pattern engine.</div></div>
+            <div class="gd-ic alert"><div class="gd-ic-tag crit">OFAC Adjacent</div><div class="gd-ic-text"><strong>Apex Management</strong> shares its registered agent with 2 entities on the OFAC SDN list.</div></div>
+            <div class="gd-ic warn"><div class="gd-ic-tag warn">Pattern Detected</div><div class="gd-ic-text">Same registered agent found across <strong>7 entities</strong> in this network. This is a common shell cascade indicator.</div></div>
+            <div class="gd-ic info"><div class="gd-ic-tag info">Court Record Found</div><div class="gd-ic-text">PACER: Shell Cascade named in <strong>2 civil suits</strong> in 2022 and 2023. Source: CourtListener.</div></div>
+          </div>
+          <div class="gd-ai-box">
+            <div class="gd-ai-label">AI Intelligence Brief</div>
+            <div class="gd-ai-text">Shell Cascade appears to function as a <em>layering vehicle</em>. The offshore connection combined with a shared agent across 7 entities is consistent with <em>asset obfuscation</em>. Recommend tracing the ultimate beneficial owner through BVI filings. <em>Priority: High.</em></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section-how" id="how">
+  <div class="container">
+    <div class="sec-tag">Process</div>
+    <h2 class="sec-title">Three steps to <span>expose a network</span></h2>
+    <div class="how-grid">
+      <div class="how-card">
+        <div class="how-num">01</div>
+        <div class="how-title">The Feed Finds It First</div>
+        <div class="how-desc">Arcane Tracer watches 50 public data sources every day. When a new entity receives government money and matches known fraud signatures like new incorporation, shared registered agent, offshore jurisdiction, or post-dissolution billing, it surfaces automatically. You do not need to know what to search for.</div>
+        <span class="how-chip">Proactive Detection</span>
+      </div>
+      <div class="how-card">
+        <div class="how-num">02</div>
+        <div class="how-title">The Network Maps Itself</div>
+        <div class="how-desc">Click any anomaly and watch the full entity network emerge in real time. Shared registered agents, overlapping officers, same addresses, connected court filings. Every connection is labeled with its original source record and explained in plain English that anyone can understand.</div>
+        <span class="how-chip">Network Intelligence</span>
+      </div>
+      <div class="how-card">
+        <div class="how-num">03</div>
+        <div class="how-title">AI Writes the Brief</div>
+        <div class="how-desc">Every investigation generates a plain-language intelligence brief. What was found, why the patterns matter, and exactly what to investigate next. Every claim cites its source. Every output is clearly labeled as analytical observation, not a legal determination or accusation of wrongdoing.</div>
+        <span class="how-chip">AI Analysis</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DATA SOURCES -->
+<section class="section-sources">
+  <div class="container">
+    <div class="sec-tag">Data Sources</div>
+    <h2 class="sec-title">Where the data <span>comes from</span></h2>
+    <p class="sec-sub" style="margin-bottom:36px;">Every data point in Arcane Tracer is sourced from official public databases. We do not scrape, estimate, or infer. If we show it, we can cite it.</p>
+    <div class="sources-grid">
+      <div class="source-card"><div class="source-status">Live</div><div class="source-name">USASpending.gov</div><div class="source-desc">All federal contracts, grants, loans, and direct payments. The primary feed for the anomaly detection engine.</div></div>
+      <div class="source-card"><div class="source-status">Live</div><div class="source-name">OpenCorporates</div><div class="source-desc">200M+ company records across 140 jurisdictions. Officers, registered agents, addresses, incorporation dates, and status.</div></div>
+      <div class="source-card"><div class="source-status">Live</div><div class="source-name">OFAC SDN List</div><div class="source-desc">US Treasury's Specially Designated Nationals. Sanctioned individuals and entities cross-referenced against every network.</div></div>
+      <div class="source-card"><div class="source-status">Live</div><div class="source-name">SEC EDGAR</div><div class="source-desc">All SEC filings for public companies. Ownership disclosures, beneficial ownership, and financial statements.</div></div>
+      <div class="source-card"><div class="source-status">Live</div><div class="source-name">CourtListener</div><div class="source-desc">Millions of federal court records. Civil suits, bankruptcies, and criminal cases searchable by entity name.</div></div>
+      <div class="source-card"><div class="source-status">Live</div><div class="source-name">State Registries</div><div class="source-desc">Business registry data from all 50 states. Priority coverage for Delaware, Wyoming, Nevada, and Florida.</div></div>
+      <div class="source-card"><div class="source-status">Live</div><div class="source-name">IRS Exempt Org</div><div class="source-desc">IRS records of nonprofit organizations including status, revocations, and annual filings. Critical for catching the Feeding Our Future pattern.</div></div>
+      <div class="source-card"><div class="source-status">Coming Soon</div><div class="source-name">FEC Campaign Finance</div><div class="source-desc">Federal campaign contribution records. Political connections in financial networks mapped and visible.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ACCESS -->
+<section class="section-access" id="access">
+  <div class="container">
+    <div class="sec-tag">Access</div>
+    <h2 class="sec-title" style="color:var(--on-d);margin-bottom:12px;">Simple access.<br><span style="color:var(--cyan)">Serious capability.</span></h2>
+    <p style="font-family:'DM Sans',sans-serif;font-size:16px;color:var(--on-d3);margin-bottom:44px;line-height:1.75;">The live feed is free for every citizen, forever. Professional access is by request. We review every submission personally and aim to respond in a reasonable timeframe.</p>
+
+    <div class="access-grid" style="grid-template-columns:repeat(2,1fr);max-width:800px;margin:0 auto 32px;">
+
+      <!-- FREE -->
+      <div class="access-card">
+        <div class="access-tier">Citizens</div>
+        <div class="access-name">Free</div>
+        <div class="access-who">For anyone who wants to follow the money. No account required to view the feed.</div>
+        <ul class="access-features">
+          <li>Full live anomaly feed</li>
+          <li>3 entity searches per day</li>
+          <li>Interactive network graph</li>
+          <li>AI intelligence summary</li>
+          <li>Shareable investigation link</li>
+          <li class="dim">PDF export</li>
+          <li class="dim">Watchlist alerts</li>
+          <li class="dim">Unlimited searches</li>
+        </ul>
+        <button class="abtn abtn-outline" onclick="scroll('feed')">View the Live Feed</button>
+      </div>
+
+      <!-- PROFESSIONAL -->
+      <div class="access-card featured">
+        <div class="access-tier">Practitioners</div>
+        <div class="access-name">Professional</div>
+        <div class="access-who">For investigators, journalists, lawyers, and compliance analysts working active cases.</div>
+        <ul class="access-features">
+          <li>Everything in Free</li>
+          <li>Unlimited investigations</li>
+          <li>Full AI brief with source citations</li>
+          <li>PDF export and data download</li>
+          <li>90-day investigation history</li>
+          <li>Email support</li>
+          <li class="dim">Team workspace</li>
+          <li class="dim">API access</li>
+        </ul>
+        <button class="abtn abtn-primary" onclick="prefillForm('Professional')">Request Access</button>
+      </div>
+
+      <!-- ENTERPRISE -->
+    </div>
+
+    <!-- CONTACT FORM -->
+    <div class="access-contact" id="contact-form">
+      <div class="ac-left">
+        <h3>Request access</h3>
+        <p style="margin-top:10px;">Tell us who you are and what you are working on. We review every request personally and aim to follow up in a reasonable timeframe. No pressure, no cold calls. If you qualify for Professional access we follow up by email with a secure payment link.</p>
+        <div style="margin-top:28px;padding:16px 20px;border:1px solid var(--bdr-dark);background:rgba(0,200,150,0.05);border-left:3px solid var(--low);">
+          <div style="font-family:'Exo 2',sans-serif;font-size:13px;font-weight:700;color:var(--low);margin-bottom:6px;">What happens after you submit</div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--on-d3);line-height:1.7;">You receive an auto-confirmation after you submit. We review your request and aim to follow up by email with a secure Stripe payment link if you qualify for Professional access. No spam, no cold calls.</div>
+        </div>
+      </div>
+      <div class="ac-right">
+        <div id="form-success" style="display:none;padding:32px;text-align:center;">
+          <div style="width:48px;height:48px;background:rgba(0,200,150,0.1);border:1px solid rgba(0,200,150,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#00C896" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div style="font-family:'Exo 2',sans-serif;font-size:20px;font-weight:800;color:var(--on-d);letter-spacing:-0.5px;margin-bottom:8px;">Request Received</div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--on-d3);line-height:1.65;">Check your inbox for a confirmation. We aim to follow up by email with next steps in a reasonable timeframe.</div>
+        </div>
+        <div id="form-fields">
+          <div class="form-row">
+            <label class="form-label">Full Name <span style="color:var(--crit);">*</span></label>
+            <input class="form-input" id="f-name" type="text" placeholder="Your full name" required>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Work Email <span style="color:var(--crit);">*</span></label>
+            <input class="form-input" id="f-email" type="email" placeholder="your@organization.com" required>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Organization</label>
+            <input class="form-input" id="f-org" type="text" placeholder="Your organization or firm name">
+          </div>
+          <div class="form-row">
+            <label class="form-label">Access Level <span style="color:var(--crit);">*</span></label>
+            <select class="form-input form-select" id="f-level">
+              <option value="">Select access level...</option>
+              <option value="Professional">Professional</option>
+              <option value="Other">Other / Not sure yet</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label">What are you investigating or trying to accomplish? <span style="color:var(--crit);">*</span></label>
+            <textarea class="form-input" id="f-usecase" placeholder="Brief description of your use case and what you need..." style="min-height:90px;"></textarea>
+          </div>
+          <div class="form-row" style="border:1px solid var(--bdr-dark);padding:16px;background:rgba(0,200,150,0.04);">
+            <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;">
+              <input type="checkbox" id="f-terms" style="width:18px;height:18px;margin-top:2px;flex-shrink:0;accent-color:var(--blue);cursor:pointer;" onchange="updateFormSubmit()">
+              <span style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--on-d2);line-height:1.6;">I have read and agree to the <a href="/terms" target="_blank" style="color:var(--cyan);">Terms of Use</a> and <a href="/methodology" target="_blank" style="color:var(--cyan);">Methodology</a>. I understand that Arcane Tracer output is pattern analysis from public data, not a determination of fraud or wrongdoing, and I will not take adverse action against any entity based solely on this output.</span>
+            </label>
+          </div>
+          <div id="form-error" style="display:none;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--crit);margin-bottom:12px;padding:10px 14px;background:rgba(255,45,85,0.07);border:1px solid rgba(255,45,85,0.2);"></div>
+            <button class="form-submit" id="form-submit-btn" onclick="submitForm()" style="opacity:.5;cursor:not-allowed;" disabled>
+              <span id="submit-text">Submit Access Request</span>
+              <span id="submit-spinner" style="display:none;">Sending...</span>
+            </button>
+          <div class="form-note">We aim to respond in a reasonable timeframe. Your information is not shared or sold.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DONATE -->
+<section class="section-donate" id="donate">
+  <div class="container">
+    <div class="donate-box">
+      <div class="donate-left">
+        <div class="sec-tag">Support the Mission</div>
+        <h2 class="sec-title" style="font-size:34px;margin-bottom:12px;">Keep fraud <span>detection free</span></h2>
+        <p>Arcane Tracer is free for every citizen who wants to follow the money. That costs real money to operate. If this tool is valuable to you, please consider supporting it so it stays free for everyone who needs it.</p>
+        <div class="donate-amounts">
+          <button class="donate-amt">$5</button>
+          <button class="donate-amt active">$25</button>
+          <button class="donate-amt">$50</button>
+          <button class="donate-amt">$100</button>
+          <button class="donate-amt">Other</button>
+        </div>
+        <button class="bmc-btn">Support Arcane Tracer</button>
+      </div>
+      <div class="donate-right">
+        <ul style="list-style:none;">
+          <li class="di-item">
+            <div class="di-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#0057FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4.5 13.5H11L10 22L19.5 10.5H13L13 2z"/></svg>
+            </div>
+            <div class="di-text"><strong>$5 keeps the feed live for a day</strong>Covers API costs to monitor federal spending and surface anomalies for 24 hours.</div>
+          </li>
+          <li class="di-item">
+            <div class="di-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#0057FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.35" y2="16.35"/></svg>
+            </div>
+            <div class="di-text"><strong>$25 funds one full investigation</strong>Covers AI analysis, data retrieval, and network mapping for a complete entity investigation.</div>
+          </li>
+          <li class="di-item">
+            <div class="di-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#0057FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a1 1 0 0 0-1 1v18a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+            </div>
+            <div class="di-text"><strong>$100 supports a journalist for a month</strong>Helps provide free access to investigative reporters exposing fraud in the public interest.</div>
+          </li>
+          <li class="di-item">
+            <div class="di-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#0057FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="22" x2="22" y2="22"/><rect x="3" y="18" width="18" height="4"/><rect x="5" y="8" width="2" height="10"/><rect x="11" y="8" width="2" height="10"/><rect x="17" y="8" width="2" height="10"/><line x1="3" y1="8" x2="21" y2="8"/><path d="M12 2L2 7h20z"/></svg>
+            </div>
+            <div class="di-text"><strong>Every dollar funds free public access</strong>All donations go toward keeping the anomaly feed and basic investigations free for citizens.</div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section-cta">
+  <div class="container">
+    <div class="cta-box">
+      <div class="corner c-tl"></div><div class="corner c-tr"></div><div class="corner c-bl"></div><div class="corner c-br"></div>
+      <div class="cta-i">
+        <div class="cta-tag">Start Now</div>
+        <h2 class="cta-title">The money always<br>leaves a <span>trail.</span></h2>
+        <p class="cta-sub">The live anomaly feed is free. No account required. Start following the money today.</p>
+        <div class="cta-actions">
+          <button class="btn-p" onclick="scroll('feed')">View the Live Feed</button>
+          <button class="btn-o" onclick="scroll('access')">Request Access</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="foot-i">
+    <div>
+      <div class="foot-logo">ARCANE <span>TRACER</span></div>
+      <div class="foot-copy">© 2026 Arcane Tracer. Built by Flavio DeOliveira LLC. All rights reserved.</div>
+    </div>
+    <div class="foot-links">
+      <a href="/methodology">Methodology</a>
+      <a href="/terms">Terms of Use</a>
+      <a href="/privacy">Privacy Policy</a>
+      <a href="mailto:support@arcanetracer.com">Contact</a>
+    </div>
+  </div>
+  <div class="foot-disclaimer">
+    All data displayed by Arcane Tracer is sourced entirely from publicly available government databases including USASpending.gov, OpenCorporates, SEC EDGAR, the OFAC SDN List, CourtListener, and state business registries. The presence of connections between entities does not indicate fraud or wrongdoing. All risk signals and network patterns identified are analytical observations based on publicly documented fraud indicators and should not be treated as legal conclusions or accusations. Arcane Tracer does not make legal determinations of any kind. The $420 billion fraud exposure estimate is derived from applying the GAO's documented 20% fraud rate to monitored spending and is not a confirmed or verified fraud total. Always consult qualified legal and compliance professionals before taking action based on any information displayed on this platform.
+  </div>
+</footer>
+
+<script>
+// ─── MOBILE NAV ───────────────────────────────────────────────
+function toggleMobileNav() {
+  const burger = document.getElementById('nav-burger');
+  const drawer = document.getElementById('nav-drawer');
+  const open = drawer.classList.toggle('open');
+  burger.classList.toggle('open', open);
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+
+function closeMobileNav() {
+  document.getElementById('nav-burger').classList.remove('open');
+  document.getElementById('nav-drawer').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ─── DEVICE FINGERPRINT ───────────────────────────────────────
+async function getFingerprint() {
+  const s = [
+    navigator.language||'', navigator.platform||'',
+    screen.width+'x'+screen.height, screen.colorDepth,
+    new Date().getTimezoneOffset(),
+    navigator.hardwareConcurrency||0, navigator.deviceMemory||0
+  ];
+  try {
+    const c = document.createElement('canvas'), ctx = c.getContext('2d');
+    ctx.font = '14px Exo 2'; ctx.fillStyle = '#0057FF';
+    ctx.fillRect(0,0,80,20); ctx.fillStyle = '#050F1E';
+    ctx.fillText('at-fp-signal',2,15);
+    s.push(c.toDataURL().slice(-50));
+  } catch(e) {}
+  const str = s.join('|');
+  let h = 0;
+  for (let i=0; i<str.length; i++) { h=((h<<5)-h)+str.charCodeAt(i); h=h&h; }
+  return Math.abs(h).toString(36);
+}
+
+function today() {
+  const d = new Date();
+  return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+}
+const FREE_LIMIT = 3;
+
+async function checkLimit() {
+  const fp = await getFingerprint();
+  const key = 'at_u_'+fp+'_'+today();
+  return { limited: (parseInt(localStorage.getItem(key)||'0') >= FREE_LIMIT), key };
+}
+
+async function incrementUsage() {
+  const { key } = await checkLimit();
+  localStorage.setItem(key, (parseInt(localStorage.getItem(key)||'0')+1));
+}
+
+async function handleSearch() {
+  const input = document.getElementById('search-input');
+  const banner = document.getElementById('limit-banner');
+  if (!input.value.trim()) return;
+  const { limited } = await checkLimit();
+  if (limited) { banner.style.display='block'; input.value=''; return; }
+  await incrementUsage();
+  banner.style.display = 'none';
+  console.log('Search:', input.value); // wire to API on launch
+}
+
+document.getElementById('search-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleSearch();
+});
+
+function setSearch(el) {
+  document.getElementById('search-input').value = el.textContent;
+  document.getElementById('search-input').focus();
+}
+
+function scroll(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+// ─── TERMS ACCEPTANCE ────────────────────────────────────────
+// Submit button is disabled until terms checkbox is checked.
+function updateFormSubmit() {
+  const checked = document.getElementById('f-terms')?.checked;
+  const btn = document.getElementById('form-submit-btn');
+  if (!btn) return;
+  btn.disabled = !checked;
+  btn.style.opacity = checked ? '1' : '0.5';
+  btn.style.cursor  = checked ? 'pointer' : 'not-allowed';
+}
+
+// ─── FORM PREFILL ─────────────────────────────────────────────
+function prefillForm(level) {
+  scroll('contact-form');
+  setTimeout(() => {
+    const sel = document.getElementById('f-level');
+    if (!sel) return;
+    for (let i=0; i<sel.options.length; i++) {
+      if (sel.options[i].value === level) {
+        sel.selectedIndex = i; break;
+      }
+    }
+    document.getElementById('f-name').focus();
+  }, 600);
+}
+
+// ─── FORM VALIDATION ──────────────────────────────────────────
+function showFormError(msg) {
+  const errDiv = document.getElementById('form-error');
+  errDiv.textContent = msg;
+  errDiv.style.display = 'block';
+  errDiv.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+// ─── FORM SUBMISSION ──────────────────────────────────────────
+// POSTs to the Railway backend endpoint (build separately).
+// Fallback: opens a prefilled mailto if the API is not yet live.
+// Backend endpoint: POST https://api.arcanetracer.com/access-request
+// Body: { name, email, org, level, usecase }
+// Actions: validate, Resend notification to you, auto-reply to submitter, log to Supabase
+async function submitForm() {
+  const name    = document.getElementById('f-name').value.trim();
+  const email   = document.getElementById('f-email').value.trim();
+  const org     = document.getElementById('f-org').value.trim();
+  const level   = document.getElementById('f-level').value;
+  const usecase = document.getElementById('f-usecase').value.trim();
+  const btn     = document.getElementById('form-submit-btn');
+  const text    = document.getElementById('submit-text');
+  const spinner = document.getElementById('submit-spinner');
+
+  document.getElementById('form-error').style.display = 'none';
+
+  if (!name)    { showFormError('Please enter your full name.'); return; }
+  if (!email || !email.includes('@')) { showFormError('Please enter a valid work email address.'); return; }
+  if (!level)   { showFormError('Please select an access level.'); return; }
+  if (!usecase) { showFormError('Please describe your use case.'); return; }
+  if (!document.getElementById('f-terms')?.checked) { showFormError('You must accept the Terms of Use to continue.'); return; }
+
+  btn.disabled = true;
+  text.style.display = 'none';
+  spinner.style.display = 'inline';
+
+  try {
+    const res = await fetch('https://api.arcanetracer.com/access-request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, org, level, usecase, terms_accepted_at: new Date().toISOString(), terms_version: '1.0' })
+    });
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      document.getElementById('form-fields').style.display = 'none';
+      document.getElementById('form-success').style.display = 'block';
+    } else {
+      throw new Error(data.error || 'Something went wrong. Please try again.');
+    }
+  } catch (err) {
+    // If the API is not live yet, fall back to prefilled mailto
+    if (err.message.includes('fetch') || err.message.includes('Network') || err.message.includes('Failed')) {
+      const subject = encodeURIComponent('Arcane Tracer Access Request: ' + level);
+      const body = encodeURIComponent(
+        'Name: ' + name + '\n' +
+        'Email: ' + email + '\n' +
+        'Organization: ' + (org||'Not provided') + '\n' +
+        'Access Level: ' + level + '\n\nUse Case:\n' + usecase
+      );
+      window.location.href = 'mailto:support@arcanetracer.com?subject=' + subject + '&body=' + body;
+      document.getElementById('form-fields').style.display = 'none';
+      document.getElementById('form-success').style.display = 'block';
+    } else {
+      showFormError(err.message);
+      btn.disabled = false;
+      text.style.display = 'inline';
+      spinner.style.display = 'none';
+    }
+  }
+}
+
+// ─── DONATE AMOUNTS ───────────────────────────────────────────
+document.querySelectorAll('.donate-amt').forEach(b => {
+  b.addEventListener('click', function() {
+    document.querySelectorAll('.donate-amt').forEach(x => x.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// ─── ANCHOR NAV ───────────────────────────────────────────────
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const t = document.querySelector(a.getAttribute('href'));
+    if (t) { e.preventDefault(); t.scrollIntoView({ behavior:'smooth', block:'start' }); }
+  });
+});
+
+// ─── FIXED VIEWPORT TOOLTIP ENGINE ───────────────────────────
+// position:fixed bypasses all overflow:hidden/auto clipping
+(function() {
+  const TIP_W=252, TIP_OFF=10, PAD=12;
+  const tip = document.createElement('div');
+  tip.id = 'at-tip';
+  document.body.appendChild(tip);
+  let timer = null;
+
+  function show(badge) {
+    clearTimeout(timer);
+    const txt = badge.getAttribute('data-tip');
+    if (!txt) return;
+    tip.textContent = txt;
+    tip.style.display = 'block';
+    const r = badge.getBoundingClientRect();
+    const h = tip.offsetHeight || 80;
+    let top = r.top - h - TIP_OFF;
+    if (top < PAD) top = r.bottom + TIP_OFF;
+    let left = r.left + r.width/2 - TIP_W/2;
+    left = Math.max(PAD, Math.min(window.innerWidth-TIP_W-PAD, left));
+    tip.style.top=top+'px'; tip.style.left=left+'px'; tip.style.width=TIP_W+'px';
+    requestAnimationFrame(() => tip.classList.add('visible'));
+  }
+
+  function hide() {
+    tip.classList.remove('visible');
+    timer = setTimeout(() => { tip.style.display='none'; }, 160);
+  }
+
+  function attach() {
+    document.querySelectorAll('[data-tip]').forEach(el => {
+      if (el._tb) return; el._tb=true;
+      el.addEventListener('mouseenter', () => show(el));
+      el.addEventListener('mouseleave', hide);
+      el.addEventListener('focus', () => show(el));
+      el.addEventListener('blur', hide);
+    });
+  }
+
+  attach();
+  document.addEventListener('scroll', attach, { passive:true });
+})();
+</script>
+</body>
+</html>

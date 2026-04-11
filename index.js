@@ -1,4 +1,5 @@
 require('dotenv').config();
+const crypto  = require('crypto');
 const express  = require('express');
 const cors     = require('cors');
 const { Resend } = require('resend');
@@ -38,7 +39,7 @@ app.get('/health', (req, res) => {
 // 4. Sends the submitter a clean auto-reply
 app.post('/access-request', async (req, res) => {
   try {
-    const { name, email, org, level, usecase } = req.body;
+    const { name, email, org, level, usecase, terms_accepted_at, terms_version, fingerprint } = req.body;
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
 
     // ── VALIDATION ────────────────────────────────────────────
@@ -51,18 +52,47 @@ app.post('/access-request', async (req, res) => {
 
     const submittedAt = new Date().toISOString();
 
+    // ── RESOLVE TERMS ACCEPTANCE ──────────────────────────────
+    // If the frontend sent a fingerprint and terms_version, look up the
+    // matching row in terms_acceptances and stamp this access_request with
+    // its accepted_at. If no row is found, leave the columns NULL and log a
+    // warning. The landing page modal is the primary gate; this is a
+    // belt-and-suspenders check.
+    let resolvedTermsAcceptedAt = terms_accepted_at || null;
+    let resolvedTermsVersion = terms_version || null;
+    if (fingerprint && terms_version) {
+      const { data: ack, error: ackError } = await supabase
+        .from('terms_acceptances')
+        .select('accepted_at')
+        .eq('fingerprint', fingerprint)
+        .eq('terms_version', terms_version)
+        .order('accepted_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (ackError) {
+        console.error('terms_acceptances lookup error:', ackError);
+      }
+      if (ack && ack.accepted_at) {
+        resolvedTermsAcceptedAt = ack.accepted_at;
+        resolvedTermsVersion = terms_version;
+      } else {
+        console.warn('access-request submitted without matching terms_acceptances row', {
+          fingerprint, terms_version
+        });
+        resolvedTermsAcceptedAt = null;
+        resolvedTermsVersion = null;
+      }
+    }
+
     // ── LOG TO SUPABASE ───────────────────────────────────────
     const { error: dbError } = await supabase
       .from('access_requests')
       .insert({
-        name,
-        email,
-        org: org || null,
-        level,
-        usecase,
-        ip,
+        name, email, org: org || null, level, usecase, ip,
+        terms_accepted_at: resolvedTermsAcceptedAt,
+        terms_version: resolvedTermsVersion,
         submitted_at: submittedAt,
-        status: 'pending' // pending → reviewed → approved → rejected
+        status: 'pending'
       });
 
     if (dbError) {
@@ -72,8 +102,8 @@ app.post('/access-request', async (req, res) => {
 
     // ── NOTIFY YOU ────────────────────────────────────────────
     // Clean, formatted email delivered to your inbox immediately
-    await resend.emails.send({
-      from: 'Arcane Tracer <notifications@arcanetracer.com>',
+    const { data: d1, error: e1 } = await resend.emails.send({
+      from: 'Arcane Tracer <onboarding@resend.dev>',
       to: [process.env.OWNER_EMAIL],
       subject: `[Access Request] ${level} — ${name}`,
       html: `
@@ -124,10 +154,12 @@ app.post('/access-request', async (req, res) => {
         </div>
       `
     });
+    if (e1) console.error('Resend notify error:', e1);
+    else console.log('Notify email sent:', d1?.id);
 
     // ── AUTO-REPLY TO SUBMITTER ───────────────────────────────
-    await resend.emails.send({
-      from: 'Arcane Tracer <hello@arcanetracer.com>',
+    const { data: d2, error: e2 } = await resend.emails.send({
+      from: 'Arcane Tracer <onboarding@resend.dev>',
       to: [email],
       subject: 'We received your Arcane Tracer access request',
       html: `
@@ -175,12 +207,85 @@ app.post('/access-request', async (req, res) => {
         </div>
       `
     });
+    if (e2) console.error('Resend auto-reply error:', e2);
+    else console.log('Auto-reply sent:', d2?.id);
 
     return res.json({ ok: true });
 
   } catch (err) {
     console.error('Access request error:', err);
     return res.status(500).json({ ok: false, error: 'Server error. Please try again or email hello@arcanetracer.com directly.' });
+  }
+});
+
+// ── TERMS: CHECK ─────────────────────────────────────────────
+// Frontend calls this on landing to decide whether to show the
+// terms+methodology acceptance modal. Keyed on browser fingerprint
+// and the current terms_version string.
+app.get('/api/check-terms', async (req, res) => {
+  try {
+    const { fingerprint, version } = req.query;
+    if (!fingerprint || !version) {
+      return res.status(400).json({ error: 'missing required parameter' });
+    }
+    const { data, error } = await supabase
+      .from('terms_acceptances')
+      .select('terms_version, accepted_at')
+      .eq('fingerprint', fingerprint)
+      .eq('terms_version', version)
+      .order('accepted_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      console.error('check-terms query error:', error);
+      return res.status(500).json({ error: 'database error' });
+    }
+    if (!data) {
+      return res.json({ accepted: false });
+    }
+    return res.json({
+      accepted: true,
+      version: data.terms_version,
+      accepted_at: data.accepted_at
+    });
+  } catch (err) {
+    console.error('check-terms handler error:', err);
+    return res.status(500).json({ error: 'database error' });
+  }
+});
+
+// ── TERMS: ACCEPT ────────────────────────────────────────────
+// Records a terms+methodology acceptance event. We hash the caller
+// IP with SHA-256 for anti-abuse only; the raw IP is never stored.
+app.post('/api/accept-terms', async (req, res) => {
+  try {
+    const { fingerprint, terms_version, methodology_version } = req.body || {};
+    if (!fingerprint || !terms_version) {
+      return res.status(400).json({ error: 'missing required parameter' });
+    }
+    const rawIp = (req.headers['x-forwarded-for']?.split(',')[0]?.trim()) || req.socket.remoteAddress || '';
+    const ipHash = rawIp ? crypto.createHash('sha256').update(rawIp).digest('hex') : null;
+    const userAgent = req.headers['user-agent'] || null;
+
+    const { data, error } = await supabase
+      .from('terms_acceptances')
+      .insert({
+        fingerprint,
+        terms_version,
+        methodology_version: methodology_version || null,
+        ip_hash: ipHash,
+        user_agent: userAgent
+      })
+      .select('accepted_at')
+      .single();
+    if (error) {
+      console.error('accept-terms insert error:', error);
+      return res.status(500).json({ error: 'database error' });
+    }
+    return res.json({ ok: true, accepted_at: data.accepted_at });
+  } catch (err) {
+    console.error('accept-terms handler error:', err);
+    return res.status(500).json({ error: 'database error' });
   }
 });
 

@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Our Methodology: Arcane Tracer</title>
+<meta name="description" content="How Arcane Tracer scores risk, where data comes from, what we never flag, and the language standards that govern every output. Transparency is the product.">
+<meta name="keywords" content="Arcane Tracer methodology, fraud detection accuracy, risk scoring transparency, false positive prevention, financial intelligence standards">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://arcanetracer.com/methodology">
+<meta property="og:title" content="Our Methodology: Arcane Tracer">
+<meta property="og:description" content="How we score risk, what we never flag, and the language standards every output must meet. Transparency is not optional.">
+<link rel="canonical" href="https://arcanetracer.com/methodology">
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ── EXACT SAME DESIGN SYSTEM AS INDEX.HTML ── */
+:root{
+  --void:#050F1E;--deep:#081524;--dark-card:#0C1A2E;
+  --page:#F2F7FF;--surface:#FFFFFF;--surf-2:#EEF4FF;
+  --blue:#0057FF;--blue-b:#1A6AFF;--blue-dim:rgba(0,87,255,0.1);--blue-pale:#E8F0FF;
+  --cyan:#00D4FF;--gold:#FFB700;
+  --crit:#FF2D55;--high:#FF6B00;--med:#F5A623;--low:#00C896;
+  --ink:#030B18;--ink-2:#162840;--ink-3:#3A5470;--ink-4:#7090B0;--ink-5:#B0C8E0;
+  --on-d:rgba(255,255,255,1);--on-d2:rgba(255,255,255,0.75);--on-d3:rgba(255,255,255,0.42);
+  --on-d4:rgba(255,255,255,0.1);--on-d5:rgba(255,255,255,0.05);
+  --border:#D0DFF0;--bdr-dark:rgba(255,255,255,0.07);
+  --sh-sm:0 2px 12px rgba(3,11,24,0.07);--sh-md:0 4px 24px rgba(3,11,24,0.1);
+  --sh-blue:0 4px 20px rgba(0,87,255,0.28);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--page);color:var(--ink);font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+a{text-decoration:none;}
+button{cursor:pointer;font-family:inherit;}
+.container{max-width:860px;margin:0 auto;padding:0 32px;}
+
+/* ── NAV (identical to index) ── */
+nav{background:var(--void);border-bottom:1px solid var(--bdr-dark);position:sticky;top:0;z-index:200;backdrop-filter:blur(12px);}
+.nav-i{display:flex;align-items:center;justify-content:space-between;height:62px;padding:0 32px;max-width:1400px;margin:0 auto;gap:20px;}
+.logo{display:flex;flex-direction:column;gap:2px;line-height:1;}
+.logo-a{font-family:'Exo 2',sans-serif;font-size:18px;font-weight:900;color:white;letter-spacing:5px;text-transform:uppercase;position:relative;}
+.logo-a::after{content:'';position:absolute;top:3px;right:-7px;width:4px;height:4px;background:var(--blue);}
+.logo-t{font-family:'Exo 2',sans-serif;font-size:9px;font-weight:600;color:var(--blue);letter-spacing:7px;text-transform:uppercase;}
+.nav-right{display:flex;align-items:center;gap:12px;}
+.nav-back{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--on-d3);display:flex;align-items:center;gap:6px;transition:color .2s;}
+.nav-back:hover{color:var(--on-d);}
+.nav-back svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.btn-primary-nav{font-family:'Exo 2',sans-serif;font-size:13px;font-weight:700;color:white;background:var(--blue);border:none;padding:9px 22px;box-shadow:var(--sh-blue);letter-spacing:.3px;transition:all .2s;}
+.btn-primary-nav:hover{background:var(--blue-b);transform:translateY(-1px);}
+
+/* ── PAGE HERO ── */
+.page-hero{background:var(--void);position:relative;overflow:hidden;padding:72px 32px 64px;}
+.page-hero::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(0,87,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,87,255,.05) 1px,transparent 1px);background-size:52px 52px;mask-image:radial-gradient(ellipse 120% 80% at 50% 0%,black 30%,transparent 100%);}
+.page-hero::after{content:'';position:absolute;top:-20%;left:30%;width:50%;height:120%;background:radial-gradient(ellipse,rgba(0,87,255,.08) 0%,transparent 65%);pointer-events:none;}
+.page-hero-inner{position:relative;z-index:2;max-width:860px;margin:0 auto;}
+.ph-eyebrow{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--cyan);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+.ph-eyebrow::before{content:'';width:18px;height:2px;background:var(--cyan);}
+.ph-title{font-family:'Exo 2',sans-serif;font-size:clamp(36px,5vw,64px);font-weight:900;color:var(--on-d);letter-spacing:-2px;line-height:.95;margin-bottom:20px;}
+.ph-sub{font-family:'DM Sans',sans-serif;font-size:17px;color:var(--on-d3);line-height:1.75;max-width:600px;margin-bottom:32px;}
+.ph-updated{font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,.25);letter-spacing:1px;}
+
+/* ── TABLE OF CONTENTS ── */
+.toc{background:var(--dark-card);border:1px solid var(--bdr-dark);padding:28px 32px;margin:48px 0;}
+.toc-title{font-family:'Exo 2',sans-serif;font-size:14px;font-weight:700;color:var(--cyan);letter-spacing:.5px;margin-bottom:16px;text-transform:uppercase;}
+.toc-list{list-style:none;display:flex;flex-direction:column;gap:2px;}
+.toc-list a{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--on-d3);display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--bdr-dark);transition:color .15s;}
+.toc-list a:last-child{border-bottom:none;}
+.toc-list a:hover{color:var(--blue);}
+.toc-num{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blue);width:24px;flex-shrink:0;}
+
+/* ── PROSE BODY ── */
+.prose{padding:56px 0 80px;}
+
+/* Section */
+.m-section{margin-bottom:72px;}
+.m-section-tag{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
+.m-section-tag::before{content:'';width:16px;height:2px;background:var(--blue);}
+.m-section-title{font-family:'Exo 2',sans-serif;font-size:clamp(24px,3.5vw,36px);font-weight:900;color:var(--ink);letter-spacing:-1px;line-height:1.05;margin-bottom:20px;}
+.m-section-title span{color:var(--blue);}
+.m-body{font-family:'DM Sans',sans-serif;font-size:16px;color:var(--ink-3);line-height:1.8;margin-bottom:16px;}
+.m-body strong{color:var(--ink-2);font-weight:600;}
+
+/* Callout boxes */
+.callout{padding:20px 24px;margin:24px 0;border-left:3px solid;}
+.callout-principle{background:var(--blue-pale);border-color:var(--blue);}
+.callout-warning{background:#FFF0F3;border-color:var(--crit);}
+.callout-note{background:var(--surf-2);border-color:var(--ink-5);}
+.callout-title{font-family:'Exo 2',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.callout-principle .callout-title{color:var(--blue);}
+.callout-warning .callout-title{color:var(--crit);}
+.callout-note .callout-title{color:var(--ink-4);}
+.callout-body{font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.7;}
+.callout-principle .callout-body{color:var(--ink-2);}
+.callout-warning .callout-body{color:#8B1A2E;}
+.callout-note .callout-body{color:var(--ink-3);}
+
+/* Sub-headings */
+.m-h3{font-family:'Exo 2',sans-serif;font-size:20px;font-weight:700;color:var(--ink);letter-spacing:-.3px;margin:32px 0 10px;}
+
+/* Flag cards */
+.flag-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:24px 0;}
+.flag-card{background:var(--surface);border:1px solid var(--border);padding:22px 24px;box-shadow:var(--sh-sm);}
+.flag-card-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.flag-sev{font-family:'DM Sans',sans-serif;font-size:10px;font-weight:700;padding:3px 9px;text-transform:uppercase;letter-spacing:.5px;}
+.flag-sev.crit{background:rgba(255,45,85,.1);color:var(--crit);border:1px solid rgba(255,45,85,.2);}
+.flag-sev.high{background:rgba(255,107,0,.1);color:var(--high);border:1px solid rgba(255,107,0,.2);}
+.flag-sev.elevated{background:rgba(245,166,35,.1);color:var(--med);border:1px solid rgba(245,166,35,.2);}
+.flag-sev.low{background:rgba(0,200,150,.1);color:var(--low);border:1px solid rgba(0,200,150,.2);}
+.flag-name{font-family:'Exo 2',sans-serif;font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-.2px;}
+.flag-principle{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--blue);margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px;font-size:11px;}
+.flag-desc{font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink-3);line-height:1.65;}
+
+/* Exclusion list */
+.exclusion-list{list-style:none;margin:16px 0;}
+.exclusion-list li{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink-3);line-height:1.65;padding:10px 0 10px 20px;border-bottom:1px solid var(--border);position:relative;}
+.exclusion-list li:last-child{border-bottom:none;}
+.exclusion-list li::before{content:'';position:absolute;left:0;top:18px;width:8px;height:2px;background:var(--low);}
+
+/* Prohibited / required language table */
+.lang-table{width:100%;border-collapse:collapse;margin:20px 0;}
+.lang-table th{font-family:'Exo 2',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:10px 16px;text-align:left;}
+.lang-table th:first-child{background:#1A6B3C;color:white;}
+.lang-table th:last-child{background:#9B1F2E;color:white;}
+.lang-table td{font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 16px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.5;}
+.lang-table tr:nth-child(even) td:first-child{background:#F0FAF5;}
+.lang-table tr:nth-child(odd) td:first-child{background:var(--surface);}
+.lang-table tr:nth-child(even) td:last-child{background:#FFF5F7;}
+.lang-table tr:nth-child(odd) td:last-child{background:var(--surface);}
+.lang-table td:first-child{color:var(--ink-2);}
+.lang-table td:last-child{color:var(--crit);}
+
+/* Data source cards */
+.source-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:24px 0;}
+.source-card{background:var(--surface);border:1px solid var(--border);padding:18px 20px;}
+.source-name{font-family:'Exo 2',sans-serif;font-size:14px;font-weight:700;color:var(--ink);margin-bottom:4px;}
+.source-use{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink-3);line-height:1.55;margin-bottom:8px;}
+.source-limit{font-family:'DM Sans',sans-serif;font-size:11px;color:var(--ink-5);font-style:italic;}
+.source-live{display:inline-flex;align-items:center;gap:5px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:var(--low);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+.source-live::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--low);}
+
+/* Divider */
+.m-rule{border:none;border-top:1px solid var(--border);margin:56px 0;}
+
+/* Disclaimer box */
+.disclaimer-box{background:var(--void);border:1px solid var(--bdr-dark);padding:36px 40px;position:relative;}
+.disclaimer-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--crit),var(--high),var(--med));}
+.disclaimer-label{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--crit);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;}
+.disclaimer-text{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--on-d3);line-height:1.75;}
+.disclaimer-text p{margin-bottom:14px;}
+.disclaimer-text p:last-child{margin-bottom:0;color:var(--on-d2);font-weight:500;}
+
+/* Score table */
+.score-table{width:100%;border-collapse:collapse;margin:20px 0;}
+.score-table th{font-family:'Exo 2',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:10px 16px;text-align:left;background:var(--void);color:var(--on-d2);}
+.score-table td{font-family:'DM Sans',sans-serif;font-size:14px;padding:12px 16px;border-bottom:1px solid var(--border);}
+.score-table tr:last-child td{border-bottom:none;}
+.score-table tr:nth-child(even) td{background:var(--surf-2);}
+
+/* Contact section */
+.contact-strip{background:var(--void);border:1px solid var(--bdr-dark);padding:32px 36px;display:flex;align-items:center;justify-content:space-between;gap:24px;margin-top:48px;}
+.cs-text{}
+.cs-title{font-family:'Exo 2',sans-serif;font-size:20px;font-weight:800;color:var(--on-d);letter-spacing:-.3px;margin-bottom:6px;}
+.cs-sub{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--on-d3);line-height:1.6;}
+.cs-btn{font-family:'Exo 2',sans-serif;font-size:13px;font-weight:700;color:white;background:var(--blue);border:none;padding:12px 28px;box-shadow:var(--sh-blue);letter-spacing:.3px;white-space:nowrap;transition:all .2s;}
+.cs-btn:hover{background:var(--blue-b);transform:translateY(-1px);}
+
+/* Footer */
+footer{background:var(--void);border-top:1px solid var(--bdr-dark);padding:28px 32px;}
+.foot-i{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;}
+.foot-logo{font-family:'Exo 2',sans-serif;font-size:14px;font-weight:900;color:white;letter-spacing:4px;}
+.foot-logo span{color:var(--blue);}
+.foot-copy{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--on-d3);margin-top:3px;}
+.foot-links{display:flex;gap:16px;}
+.foot-links a{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--on-d3);transition:color .15s;text-transform:uppercase;letter-spacing:.5px;}
+.foot-links a:hover{color:var(--blue);}
+.foot-disclaimer{font-family:'DM Sans',sans-serif;font-size:11px;color:rgba(255,255,255,.18);line-height:1.65;max-width:1400px;margin:0 auto;padding:16px 0 0;border-top:1px solid var(--bdr-dark);}
+
+/* Mobile */
+@media(max-width:768px){
+  .nav-i{padding:0 16px;}
+  .page-hero{padding:48px 16px 40px;}
+  .container{padding:0 16px;}
+  .flag-grid{grid-template-columns:1fr;}
+  .source-grid{grid-template-columns:1fr;}
+  .lang-table{font-size:12px;}
+  .lang-table td,.lang-table th{padding:8px 12px;}
+  .contact-strip{flex-direction:column;padding:24px 20px;}
+  .cs-btn{width:100%;text-align:center;padding:14px;}
+  .disclaimer-box{padding:24px 20px;}
+  .toc{padding:20px 22px;}
+  .m-section-title{font-size:26px;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-i">
+    <a href="/" class="logo">
+      <div class="logo-a">ARCANE</div>
+      <div class="logo-t">TRACER</div>
+    </a>
+    <div class="nav-right">
+      <a href="/" class="nav-back">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Back to Live Feed
+      </a>
+      <button class="btn-primary-nav" onclick="window.location.href='/#access'">Get Access</button>
+    </div>
+  </div>
+</nav>
+
+<!-- PAGE HERO -->
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <div class="ph-eyebrow">Methodology and Standards</div>
+    <h1 class="ph-title">How we score risk.<br>What we never flag.</h1>
+    <p class="ph-sub">Arcane Tracer surfaces patterns in public data. We are transparent about exactly how we do it, what safeguards are in place, and where our data comes from. Transparency is not optional when the stakes are this high.</p>
+    <div class="ph-updated">Last updated April 2026 &nbsp;·&nbsp; Version 1.0</div>
+  </div>
+</div>
+
+<!-- TABLE OF CONTENTS -->
+<div class="container">
+  <div class="toc">
+    <div class="toc-title">On This Page</div>
+    <ul class="toc-list">
+      <li><a href="#commitment"><span class="toc-num">01</span>Our Commitment: What This Tool Is and Is Not</a></li>
+      <li><a href="#data"><span class="toc-num">02</span>Where the Data Comes From</a></li>
+      <li><a href="#scoring"><span class="toc-num">03</span>How Risk Scores Work</a></li>
+      <li><a href="#flags"><span class="toc-num">04</span>The Eight Risk Flags Explained</a></li>
+      <li><a href="#never"><span class="toc-num">05</span>What We Never Flag</a></li>
+      <li><a href="#language"><span class="toc-num">06</span>Language Standards: What Every Output Must Say</a></li>
+      <li><a href="#disputes"><span class="toc-num">07</span>Disputing a Flag</a></li>
+      <li><a href="#disclaimer"><span class="toc-num">08</span>Full Disclaimer</a></li>
+    </ul>
+  </div>
+</div>
+
+<!-- PROSE BODY -->
+<div class="prose">
+<div class="container">
+
+  <!-- 01 COMMITMENT -->
+  <section class="m-section" id="commitment">
+    <div class="m-section-tag">01</div>
+    <h2 class="m-section-title">Our commitment: what this tool <span>is and is not</span></h2>
+
+    <div class="callout callout-principle">
+      <div class="callout-title">The Core Principle</div>
+      <div class="callout-body">Every flag Arcane Tracer generates is a pattern observation derived entirely from public records. The existence of a pattern is not evidence of fraud. Patterns create investigative leads. Investigators follow leads. Courts determine facts. Arcane Tracer is a starting point, not an endpoint.</div>
+    </div>
+
+    <p class="m-body">Arcane Tracer monitors public federal spending data and surfaces statistical anomalies: patterns that, based on documented fraud cases, warrant a closer look. It is a pattern detection engine, not a fraud determination system.</p>
+
+    <p class="m-body">We do not determine guilt. We do not confirm wrongdoing. We are not a law enforcement tool, a credit reporting agency, or a replacement for legal due diligence. We aggregate and connect publicly available records and present the patterns we find with full source citations and explicit uncertainty about what those patterns mean.</p>
+
+    <p class="m-body"><strong>What Arcane Tracer output is appropriate for:</strong> opening an investigation, requesting records under FOIA, conducting additional due diligence, or triaging a large dataset of entities. It is not appropriate as a sole basis for publishing an accusation, freezing an account, denying a contract, or any other action that materially harms a business or individual without independent verification.</p>
+
+    <div class="callout callout-warning">
+      <div class="callout-title">The Stakes</div>
+      <div class="callout-body">A business wrongly flagged as high-risk may lose contracts, face regulatory scrutiny, or be damaged in the press. The burden of accuracy is on us. We treat false positives as serious failures, not acceptable edge cases. Every design decision in this system was made with this responsibility in mind.</div>
+    </div>
+  </section>
+
+  <hr class="m-rule">
+
+  <!-- 02 DATA SOURCES -->
+  <section class="m-section" id="data">
+    <div class="m-section-tag">02</div>
+    <h2 class="m-section-title">Where the data <span>comes from</span></h2>
+
+    <p class="m-body">Every data point Arcane Tracer uses comes from official public government databases. We do not scrape private sites, buy commercial data lists, or accept user-submitted information as input to risk scoring. If we cannot source a claim to a specific public record, it does not appear in our output.</p>
+
+    <div class="source-grid">
+      <div class="source-card">
+        <div class="source-live">Live</div>
+        <div class="source-name">USASpending.gov</div>
+        <div class="source-use">All federal contracts, grants, loans, and direct payments. The primary source for the anomaly detection feed.</div>
+        <div class="source-limit">Known limitation: some programs have a 30 to 90 day reporting lag on new awards.</div>
+      </div>
+      <div class="source-card">
+        <div class="source-live">Live</div>
+        <div class="source-name">OpenCorporates</div>
+        <div class="source-use">200M+ company records across 140 jurisdictions. Incorporation dates, registered agents, officers, addresses, and status.</div>
+        <div class="source-limit">Known limitation: not all states update in real time. Registry data can lag by weeks in some jurisdictions.</div>
+      </div>
+      <div class="source-card">
+        <div class="source-live">Live</div>
+        <div class="source-name">OFAC SDN List</div>
+        <div class="source-use">US Treasury's Specially Designated Nationals list. Every entity in every network is cross-referenced daily.</div>
+        <div class="source-limit">Known limitation: covers US-designated sanctions only. Does not include EU or UN sanctions lists.</div>
+      </div>
+      <div class="source-card">
+        <div class="source-live">Live</div>
+        <div class="source-name">SEC EDGAR</div>
+        <div class="source-use">All SEC filings for public companies. Beneficial ownership disclosures and financial statements.</div>
+        <div class="source-limit">Known limitation: only covers SEC-registered entities. Private companies are not included.</div>
+      </div>
+      <div class="source-card">
+        <div class="source-live">Live</div>
+        <div class="source-name">CourtListener</div>
+        <div class="source-use">Millions of federal court records. Civil suits, bankruptcies, and criminal cases searchable by entity name.</div>
+        <div class="source-limit">Known limitation: not all federal courts are current. Some records are sealed or delayed.</div>
+      </div>
+      <div class="source-card">
+        <div class="source-live">Live</div>
+        <div class="source-name">State Business Registries</div>
+        <div class="source-use">Corporate status, dissolution dates, and officer changes from all 50 states.</div>
+        <div class="source-limit">Known limitation: quality and timeliness of data varies significantly by state.</div>
+      </div>
+      <div class="source-card">
+        <div class="source-live">Live</div>
+        <div class="source-name">IRS Exempt Organizations</div>
+        <div class="source-use">Nonprofit status, revocations, and annual filings. Critical for identifying organizations that lost tax-exempt status.</div>
+        <div class="source-limit">Known limitation: revocations may not appear in the database for 30 to 60 days after they occur.</div>
+      </div>
+      <div class="source-card">
+        <div class="source-live" style="color:var(--gold);--low:var(--gold);">Coming Soon</div>
+        <div class="source-name">FEC Campaign Finance</div>
+        <div class="source-use">Federal campaign contribution records for mapping political connections in financial networks.</div>
+        <div class="source-limit">In development. Not yet active in the scoring engine.</div>
+      </div>
+    </div>
+
+    <div class="callout callout-note">
+      <div class="callout-title">Data Freshness Requirement</div>
+      <div class="callout-body">Every data point displayed in Arcane Tracer shows the date it was retrieved. We never present data as current without showing its source date. If a data point is more than 90 days old it displays a staleness warning. No risk score is presented without showing the dates of the underlying data it was built from.</div>
+    </div>
+  </section>
+
+  <hr class="m-rule">
+
+  <!-- 03 SCORING -->
+  <section class="m-section" id="scoring">
+    <div class="m-section-tag">03</div>
+    <h2 class="m-section-title">How risk scores <span>work</span></h2>
+
+    <p class="m-body">Every entity Arcane Tracer investigates receives a risk score between 0 and 100. The score is additive. Each confirmed flag adds a defined number of points. Scores are never generated by a black-box machine learning model. Every point in every score is traceable to a specific, verifiable data observation.</p>
+
+    <table class="score-table">
+      <thead>
+        <tr>
+          <th>Score</th>
+          <th>Label</th>
+          <th>Visible in Public Feed</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>0 to 24</strong></td>
+          <td>Unscored: insufficient signal to assess risk</td>
+          <td>Never surfaced</td>
+        </tr>
+        <tr>
+          <td><strong>25 to 44</strong></td>
+          <td>Watch: one or more minor flags present</td>
+          <td>Internal only</td>
+        </tr>
+        <tr>
+          <td><strong>45 to 64</strong></td>
+          <td>Elevated: multiple flags confirmed</td>
+          <td>Yes, with full context and sources</td>
+        </tr>
+        <tr>
+          <td><strong>65 to 79</strong></td>
+          <td>High Risk: strong multi-flag pattern</td>
+          <td>Yes, with full context and sources</td>
+        </tr>
+        <tr>
+          <td><strong>80 to 100</strong></td>
+          <td>Critical: severe multi-flag cluster</td>
+          <td>Yes, priority surfaced</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-warning">
+      <div class="callout-title">The Minimum Threshold Rule</div>
+      <div class="callout-body">An entity will not appear in the public anomaly feed unless it scores 45 or above AND has at least two independently confirmed flags from different categories. A single flag, no matter how severe, is never sufficient to surface an entity publicly. This rule is absolute.</div>
+    </div>
+
+    <p class="m-body" style="margin-top:20px;">Flags are not OR conditions. They are AND conditions. Every single required condition within a flag must be independently verified from a primary data source before that flag contributes any points to a score. A flag that partially matches does not fire. Ambiguous matches are noted separately and never counted toward a score.</p>
+  </section>
+
+  <hr class="m-rule">
+
+  <!-- 04 FLAGS -->
+  <section class="m-section" id="flags">
+    <div class="m-section-tag">04</div>
+    <h2 class="m-section-title">The eight risk flags <span>explained</span></h2>
+
+    <p class="m-body">Each flag in Arcane Tracer requires multiple independently verified conditions to fire. Below is a plain-English explanation of each flag, what it means, and, critically, what innocent explanations exist for each pattern. We publish these because understanding what a flag does not mean is as important as understanding what it does.</p>
+
+    <div class="flag-grid">
+
+      <div class="flag-card">
+        <div class="flag-card-head">
+          <span class="flag-sev high">High Risk</span>
+        </div>
+        <div class="flag-name">New Entity Receiving Large Payment</div>
+        <div class="flag-principle">Requires: age under 6 months + payment over $250K + zero prior contracts. All three required.</div>
+        <div class="flag-desc">Legitimate contractors typically have years of operating history before receiving large federal payments. This flag fires only when all three conditions align. <strong>Innocent explanations include:</strong> legitimate startup that won a competitive bid, subsidiary of an established company, program specifically designed for new entrants.</div>
+      </div>
+
+      <div class="flag-card">
+        <div class="flag-card-head">
+          <span class="flag-sev high">High Risk</span>
+        </div>
+        <div class="flag-name">Registered Agent Manages High Volume of Same-Program Entities</div>
+        <div class="flag-principle">Requires: 200+ entities + 30% in same program + 50% incorporated in same 90-day window</div>
+        <div class="flag-desc">Mass-creation of entities for the same program by a single operator is a documented fraud pattern. This flag never fires against known national registered agent services such as CT Corporation or Northwest Registered Agent. <strong>Innocent explanations include:</strong> legitimate national service managing diverse clients, industry-specific agent specializing in a regulated sector.</div>
+      </div>
+
+      <div class="flag-card">
+        <div class="flag-card-head">
+          <span class="flag-sev high">High Risk</span>
+        </div>
+        <div class="flag-name">Multiple Entities at One Address Receiving Same Program Payments</div>
+        <div class="flag-principle">Requires: 3 or more entities + same program + non-commercial address + 2+ incorporated within 90 days</div>
+        <div class="flag-desc">Known commercial office buildings, coworking spaces, law firms, and registered agent service addresses are excluded entirely from this flag. It only fires at non-commercial addresses. <strong>Innocent explanations include:</strong> community organization hub, legitimate multi-program nonprofit, shared services arrangement.</div>
+      </div>
+
+      <div class="flag-card">
+        <div class="flag-card-head">
+          <span class="flag-sev crit">Critical</span>
+        </div>
+        <div class="flag-name">Dissolved Entity Still Receiving Payments</div>
+        <div class="flag-principle">Requires: confirmed dissolution date from state registry + payment received after that date</div>
+        <div class="flag-desc">This is a binary factual flag. Either the state says the company is dissolved and a payment arrived after that date, or it did not. We account for registry data lag and display the source date of the dissolution record prominently. <strong>Innocent explanations include:</strong> entity reinstated after dissolution, registry data lag creating apparent overlap, IRS revocation which is different from state dissolution.</div>
+      </div>
+
+      <div class="flag-card">
+        <div class="flag-card-head">
+          <span class="flag-sev high">High Risk</span>
+        </div>
+        <div class="flag-name">Connected to OFAC-Listed Entities</div>
+        <div class="flag-principle">Requires: exact officer name or registered agent match + OFAC-listed entity currently on SDN list</div>
+        <div class="flag-desc">This flag specifically does not mean the entity itself is sanctioned. It means a connection exists through shared attributes. Officer name matches require exact first and last name in the same state and time period. Partial name matches do not qualify. <strong>Innocent explanations include:</strong> common name coincidence, former employee who later appeared on a sanctions list, legitimate shared service provider.</div>
+      </div>
+
+      <div class="flag-card">
+        <div class="flag-card-head">
+          <span class="flag-sev high">High Risk</span>
+        </div>
+        <div class="flag-name">Coordinated Incorporation Window</div>
+        <div class="flag-principle">Requires: 3+ entities + shared attribute + same program + incorporation timed to program opening</div>
+        <div class="flag-desc">Legitimate businesses form independently over time. When multiple entities sharing key attributes all form within weeks of a program opening, timing correlation becomes significant. <strong>Innocent explanations include:</strong> documented corporate restructuring, legitimate business consortium formation, industry association that assisted multiple members in forming entities.</div>
+      </div>
+
+      <div class="flag-card">
+        <div class="flag-card-head">
+          <span class="flag-sev low">Supplementary</span>
+        </div>
+        <div class="flag-name">No Prior Federal Contract History</div>
+        <div class="flag-principle">Requires: zero USASpending history + entity over 12 months old + payment over $500K. Another flag must already be present</div>
+        <div class="flag-desc">This flag never surfaces an entity on its own. It is a corroborating signal only, adding context when other flags have already fired. Every organization has a first contract; this flag simply notes when there is no track record to evaluate. <strong>Innocent explanations include:</strong> legitimate first-time contractor, organization that previously operated privately or with state funding only.</div>
+      </div>
+
+      <div class="flag-card">
+        <div class="flag-card-head">
+          <span class="flag-sev elevated">Elevated</span>
+        </div>
+        <div class="flag-name">Sudden Large Payment Spike</div>
+        <div class="flag-principle">Requires: 5x increase + no contract modification on file + absolute increase over $1M + entity under 5 years history</div>
+        <div class="flag-desc">This flag does not fire against established contractors with long histories, and it excludes periods where the program itself received a budget increase. <strong>Innocent explanations include:</strong> legitimate competitive contract win, program expansion award, emergency procurement situation, merger or acquisition bringing new revenue.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <hr class="m-rule">
+
+  <!-- 05 NEVER FLAG -->
+  <section class="m-section" id="never">
+    <div class="m-section-tag">05</div>
+    <h2 class="m-section-title">What we <span>never flag</span></h2>
+
+    <p class="m-body">These categories are permanently excluded from risk scoring. No combination of flags changes this. If any proposed flag, score, or AI output references any of these categories as a basis for risk, it is removed before reaching any user.</p>
+
+    <ul class="exclusion-list">
+      <li><strong>Industry or sector.</strong> Being in healthcare, childcare, housing, or any other sector is not a risk signal. Sector-level fraud statistics describe populations, not individual entities.</li>
+      <li><strong>Payment amount alone.</strong> Receiving a large federal payment is not inherently suspicious. Amount is only relevant as a threshold condition within a multi-condition flag, never as a standalone signal.</li>
+      <li><strong>Geography.</strong> Operating in a city, state, or zip code with documented fraud history is not a risk signal for any individual entity in that area.</li>
+      <li><strong>Demographic ownership.</strong> Minority-owned, women-owned, veteran-owned, or any other ownership characteristic is never used as a risk input, modifier, or flag under any circumstances.</li>
+      <li><strong>Business age alone.</strong> Being a new business is not fraud. Age only contributes to a flag when combined with payment size, contract history, and agent patterns, never alone.</li>
+      <li><strong>Prior news coverage or allegations.</strong> Media reporting, social media allegations, or prior public accusations about an entity are never used as scoring inputs. We score only verifiable public data records.</li>
+      <li><strong>Political affiliations.</strong> Political donations, lobbying activity, or connections to political figures are not used as risk signals.</li>
+      <li><strong>Foreign-sounding names.</strong> Entity names that appear foreign or non-English are never treated as risk signals. Name origin, language, or ethnic association is completely excluded from all scoring.</li>
+      <li><strong>Single data point.</strong> Any situation where only one data source confirms a concerning pattern. One source is never enough. Independent corroboration from a second primary source is required for every flag.</li>
+    </ul>
+  </section>
+
+  <hr class="m-rule">
+
+  <!-- 06 LANGUAGE STANDARDS -->
+  <section class="m-section" id="language">
+    <div class="m-section-tag">06</div>
+    <h2 class="m-section-title">Language standards: <span>what every output must say</span></h2>
+
+    <p class="m-body">The language in every AI intelligence brief is governed by strict rules. These are enforced in the system prompt and validated before any brief is shown to a user. The distinction between observation and accusation is not semantic. It is the legal and ethical line we do not cross.</p>
+
+    <table class="lang-table">
+      <thead>
+        <tr>
+          <th>Required Phrasing</th>
+          <th>Prohibited Phrasing</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>This pattern is consistent with...</td><td>This entity is engaged in...</td></tr>
+        <tr><td>Investigators have noted that entities with this profile often...</td><td>This entity has committed...</td></tr>
+        <tr><td>The data shows that [X] occurred on [DATE] per [SOURCE]</td><td>The company fraudulently...</td></tr>
+        <tr><td>This warrants further investigation</td><td>This proves that...</td></tr>
+        <tr><td>Public records indicate...</td><td>It is clear that...</td></tr>
+        <tr><td>One possible explanation for this pattern is...</td><td>The only explanation for this is...</td></tr>
+        <tr><td>These flags are analytical observations only</td><td>These flags are evidence of...</td></tr>
+        <tr><td>This analysis is based entirely on public data and is not a legal conclusion</td><td>Fraud has been detected</td></tr>
+      </tbody>
+    </table>
+
+    <p class="m-body" style="margin-top:20px;">Every AI brief must include a section explicitly stating the innocent explanations for the patterns found. This section is mandatory and cannot be omitted regardless of how strong the pattern appears. The full disclaimer appears at the end of every brief, every investigation view, and every shared link.</p>
+  </section>
+
+  <hr class="m-rule">
+
+  <!-- 07 DISPUTES -->
+  <section class="m-section" id="disputes">
+    <div class="m-section-tag">07</div>
+    <h2 class="m-section-title">Disputing a flag</h2>
+
+    <p class="m-body">If your organization appears in Arcane Tracer and you believe a flag is inaccurate, you have the right to request a review. We take disputes seriously. A confirmed false positive is a failure of our system and we want to know about it.</p>
+
+    <p class="m-body">Send a dispute request to <strong>support@arcanetracer.com</strong> with the entity name, the specific flag you are disputing, and any documentation that supports your position. We aim to respond to disputes in a reasonable timeframe. If a flag is confirmed to be in error, we work to remove it promptly and update our methodology to reduce the chance of the same error recurring.</p>
+
+    <div class="callout callout-note">
+      <div class="callout-title">What We Can and Cannot Change</div>
+      <div class="callout-body">We can correct flags that are based on inaccurate or outdated data. We cannot remove a flag solely because an entity disagrees with the pattern observation. If the data supports the flag under our methodology, it remains. As a general practice we aim to show you the exact data and source behind any flag on request.</div>
+    </div>
+  </section>
+
+  <hr class="m-rule">
+
+  <!-- 08 DISCLAIMER -->
+  <section class="m-section" id="disclaimer">
+    <div class="m-section-tag">08</div>
+    <h2 class="m-section-title">Full disclaimer</h2>
+
+    <p class="m-body">The following disclaimer appears on every investigation output, every shared investigation link, every PDF export, and every AI intelligence brief. It cannot be dismissed, hidden, or shortened.</p>
+
+    <div class="disclaimer-box">
+      <div class="disclaimer-label">Required Disclaimer: Appears on All Outputs</div>
+      <div class="disclaimer-text">
+        <p>This report is generated entirely from publicly available government records and databases. It is an automated analytical output, not a determination of fact, and not a legal conclusion of any kind.</p>
+        <p>The risk flags, scores, and patterns identified in this report are statistical observations based on publicly documented fraud indicators. The presence of these patterns does not indicate that the entities identified have engaged in fraud, wrongdoing, or any illegal activity. Many of the patterns identified have entirely innocent explanations.</p>
+        <p>This report is intended as a starting point for investigation only. It is not appropriate as a sole basis for publishing an accusation, filing a regulatory complaint, denying a contract, freezing an account, or taking any other action that may harm a business or individual. Independent verification from qualified legal and investigative professionals is required before any such action.</p>
+        <p>Arcane Tracer makes no representations about the accuracy, completeness, or timeliness of the underlying data sources. Data may be incomplete, delayed, or in error. Always verify findings against primary source records directly.</p>
+        <p>By using this report you acknowledge that Arcane Tracer is an analytical tool, not an investigative authority, and that you bear sole responsibility for any action taken based on this information.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT STRIP -->
+  <div class="contact-strip">
+    <div class="cs-text">
+      <div class="cs-title">Questions about our methodology?</div>
+      <div class="cs-sub">We welcome scrutiny. If you have questions about how we score risk, where data comes from, or how to dispute a flag, reach out directly.</div>
+    </div>
+    <button class="cs-btn" onclick="window.location.href='mailto:support@arcanetracer.com'">Contact Us</button>
+  </div>
+
+</div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="foot-i">
+    <div>
+      <div class="foot-logo">ARCANE <span>TRACER</span></div>
+      <div class="foot-copy">© 2026 Arcane Tracer. Built by Flavio DeOliveira LLC. All rights reserved.</div>
+    </div>
+    <div class="foot-links">
+      <a href="/">Home</a>
+      <a href="/methodology">Methodology</a>
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Use</a>
+      <a href="#">Disputes</a>
+    </div>
+  </div>
+  <div class="foot-disclaimer">
+    All data displayed by Arcane Tracer is sourced entirely from publicly available government databases. The presence of connections between entities does not indicate fraud or wrongdoing. All risk signals are analytical observations only and should not be treated as legal conclusions. Arcane Tracer does not make legal determinations of any kind. Always consult qualified legal and compliance professionals before taking action based on any information displayed on this platform.
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terms of Use: Arcane Tracer</title>
+<meta name="description" content="Terms of Use for Arcane Tracer. By using this platform you agree to these terms, including the standards for how our output may and may not be used.">
+<link rel="canonical" href="https://arcanetracer.com/terms">
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#050F1E;--deep:#081524;--dark-card:#0C1A2E;
+  --page:#F2F7FF;--surface:#FFFFFF;--surf-2:#EEF4FF;
+  --blue:#0057FF;--blue-b:#1A6AFF;--blue-pale:#E8F0FF;
+  --cyan:#00D4FF;--gold:#FFB700;
+  --crit:#FF2D55;--high:#FF6B00;--low:#00C896;
+  --ink:#030B18;--ink-2:#162840;--ink-3:#3A5470;--ink-4:#7090B0;--ink-5:#B0C8E0;
+  --on-d:rgba(255,255,255,1);--on-d2:rgba(255,255,255,0.75);--on-d3:rgba(255,255,255,0.42);
+  --border:#D0DFF0;--bdr-dark:rgba(255,255,255,0.07);
+  --sh-sm:0 2px 12px rgba(3,11,24,0.07);--sh-blue:0 4px 20px rgba(0,87,255,0.28);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--page);color:var(--ink);font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+a{text-decoration:none;color:var(--blue);}
+a:hover{text-decoration:underline;}
+button{cursor:pointer;font-family:inherit;}
+.container{max-width:800px;margin:0 auto;padding:0 32px;}
+
+/* NAV */
+nav{background:var(--void);border-bottom:1px solid var(--bdr-dark);position:sticky;top:0;z-index:200;backdrop-filter:blur(12px);}
+.nav-i{display:flex;align-items:center;justify-content:space-between;height:62px;padding:0 32px;max-width:1400px;margin:0 auto;gap:20px;}
+.logo{display:flex;flex-direction:column;gap:2px;line-height:1;}
+.logo-a{font-family:'Exo 2',sans-serif;font-size:18px;font-weight:900;color:white;letter-spacing:5px;text-transform:uppercase;position:relative;}
+.logo-a::after{content:'';position:absolute;top:3px;right:-7px;width:4px;height:4px;background:var(--blue);}
+.logo-t{font-family:'Exo 2',sans-serif;font-size:9px;font-weight:600;color:var(--blue);letter-spacing:7px;text-transform:uppercase;}
+.nav-right{display:flex;align-items:center;gap:12px;}
+.nav-back{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--on-d3);display:flex;align-items:center;gap:6px;transition:color .2s;}
+.nav-back:hover{color:var(--on-d);text-decoration:none;}
+.nav-back svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.btn-primary-nav{font-family:'Exo 2',sans-serif;font-size:13px;font-weight:700;color:white;background:var(--blue);border:none;padding:9px 22px;box-shadow:var(--sh-blue);letter-spacing:.3px;transition:all .2s;}
+.btn-primary-nav:hover{background:var(--blue-b);transform:translateY(-1px);}
+
+/* PAGE HERO */
+.page-hero{background:var(--void);position:relative;overflow:hidden;padding:60px 32px 52px;}
+.page-hero::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(0,87,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,87,255,.05) 1px,transparent 1px);background-size:52px 52px;mask-image:radial-gradient(ellipse 120% 80% at 50% 0%,black 30%,transparent 100%);}
+.page-hero::after{content:'';position:absolute;top:-20%;left:30%;width:50%;height:120%;background:radial-gradient(ellipse,rgba(0,87,255,.08) 0%,transparent 65%);pointer-events:none;}
+.page-hero-inner{position:relative;z-index:2;max-width:800px;margin:0 auto;}
+.ph-eyebrow{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--cyan);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.ph-eyebrow::before{content:'';width:16px;height:2px;background:var(--cyan);}
+.ph-title{font-family:'Exo 2',sans-serif;font-size:clamp(32px,5vw,56px);font-weight:900;color:var(--on-d);letter-spacing:-1.5px;line-height:.96;margin-bottom:16px;}
+.ph-sub{font-family:'DM Sans',sans-serif;font-size:15px;color:var(--on-d3);line-height:1.72;max-width:580px;margin-bottom:24px;}
+.ph-meta{display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+.ph-date{font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,.25);letter-spacing:1px;}
+.ph-warning{display:inline-flex;align-items:center;gap:8px;background:rgba(255,45,85,.12);border:1px solid rgba(255,45,85,.2);padding:5px 14px;}
+.ph-warning span{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--crit);}
+
+/* TABLE OF CONTENTS */
+.toc{background:var(--dark-card);border:1px solid var(--bdr-dark);padding:24px 28px;margin:40px 0;}
+.toc-title{font-family:'Exo 2',sans-serif;font-size:13px;font-weight:700;color:var(--cyan);letter-spacing:.5px;margin-bottom:14px;text-transform:uppercase;}
+.toc-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 24px;}
+.toc-grid a{font-family:'DM Sans',sans-serif;font-size:13px;color:var(--on-d3);display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bdr-dark);transition:color .15s;}
+.toc-grid a:hover{color:var(--blue);text-decoration:none;}
+.toc-num{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--blue);width:20px;flex-shrink:0;}
+
+/* BODY */
+.terms-body{padding:48px 0 80px;}
+
+/* Section */
+.t-section{margin-bottom:56px;scroll-margin-top:80px;}
+.t-section-num{font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.t-section-title{font-family:'Exo 2',sans-serif;font-size:clamp(20px,3vw,28px);font-weight:800;color:var(--ink);letter-spacing:-.5px;line-height:1.1;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid var(--border);}
+.t-body{font-family:'DM Sans',sans-serif;font-size:15px;color:var(--ink-3);line-height:1.8;margin-bottom:14px;}
+.t-body strong{color:var(--ink-2);font-weight:600;}
+.t-body a{color:var(--blue);}
+
+/* Sub heading */
+.t-h3{font-family:'Exo 2',sans-serif;font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-.2px;margin:24px 0 8px;}
+
+/* Callout */
+.t-callout{padding:18px 22px;margin:20px 0;border-left:3px solid;}
+.t-callout-blue{background:var(--blue-pale);border-color:var(--blue);}
+.t-callout-red{background:#FFF0F3;border-color:var(--crit);}
+.t-callout-green{background:#EDFAF4;border-color:var(--low);}
+.t-callout-title{font-family:'Exo 2',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.t-callout-blue .t-callout-title{color:var(--blue);}
+.t-callout-red .t-callout-title{color:var(--crit);}
+.t-callout-green .t-callout-title{color:var(--low);}
+.t-callout-body{font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.7;}
+.t-callout-blue .t-callout-body{color:var(--ink-2);}
+.t-callout-red .t-callout-body{color:#7A1828;}
+.t-callout-green .t-callout-body{color:#1A4A32;}
+
+/* List */
+.t-list{list-style:none;margin:12px 0 16px;}
+.t-list li{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink-3);line-height:1.7;padding:8px 0 8px 18px;border-bottom:1px solid var(--border);position:relative;}
+.t-list li:last-child{border-bottom:none;}
+.t-list li::before{content:'';position:absolute;left:0;top:17px;width:7px;height:2px;background:var(--blue);}
+.t-list li strong{color:var(--ink-2);}
+
+/* Prohibited list */
+.t-list-no li::before{background:var(--crit);}
+
+/* ACCEPTANCE WIDGET - shown when linked from registration form */
+.accept-widget{background:var(--void);border:1px solid var(--bdr-dark);padding:32px 36px;margin-top:48px;}
+.aw-title{font-family:'Exo 2',sans-serif;font-size:20px;font-weight:800;color:var(--on-d);letter-spacing:-.3px;margin-bottom:8px;}
+.aw-sub{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--on-d3);line-height:1.65;margin-bottom:24px;}
+.aw-checks{display:flex;flex-direction:column;gap:12px;margin-bottom:24px;}
+.aw-check{display:flex;align-items:flex-start;gap:12px;cursor:pointer;}
+.aw-check input[type="checkbox"]{width:18px;height:18px;margin-top:2px;flex-shrink:0;accent-color:var(--blue);cursor:pointer;}
+.aw-check-label{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--on-d2);line-height:1.6;}
+.aw-check-label a{color:var(--cyan);}
+.aw-btn{font-family:'Exo 2',sans-serif;font-size:14px;font-weight:700;color:white;background:var(--blue);border:none;padding:14px 32px;box-shadow:var(--sh-blue);letter-spacing:.3px;transition:all .2s;width:100%;opacity:.4;cursor:not-allowed;}
+.aw-btn.active{opacity:1;cursor:pointer;}
+.aw-btn.active:hover{background:var(--blue-b);}
+.aw-note{font-family:'DM Sans',sans-serif;font-size:11px;color:rgba(255,255,255,.25);margin-top:10px;text-align:center;}
+
+/* FULL DISCLAIMER BOX */
+.disclaimer-box{background:var(--void);border:1px solid var(--bdr-dark);padding:32px 36px;position:relative;margin-top:20px;}
+.disclaimer-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--crit),var(--high),var(--gold));}
+.disclaimer-label{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--crit);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;}
+.disclaimer-text{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--on-d3);line-height:1.75;}
+.disclaimer-text p{margin-bottom:12px;}
+.disclaimer-text p:last-child{margin-bottom:0;color:var(--on-d2);font-weight:500;}
+
+/* DIVIDER */
+.t-rule{border:none;border-top:1px solid var(--border);margin:48px 0;}
+
+/* CONTACT STRIP */
+.contact-strip{background:var(--surf-2);border:1px solid var(--border);padding:28px 32px;display:flex;align-items:center;justify-content:space-between;gap:20px;margin-top:48px;}
+.cs-text .cs-title{font-family:'Exo 2',sans-serif;font-size:18px;font-weight:800;color:var(--ink);letter-spacing:-.3px;margin-bottom:5px;}
+.cs-text .cs-sub{font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink-3);}
+.cs-btn{font-family:'Exo 2',sans-serif;font-size:13px;font-weight:700;color:white;background:var(--blue);border:none;padding:11px 24px;box-shadow:var(--sh-blue);letter-spacing:.3px;white-space:nowrap;transition:all .2s;}
+.cs-btn:hover{background:var(--blue-b);}
+
+/* FOOTER */
+footer{background:var(--void);border-top:1px solid var(--bdr-dark);padding:28px 32px;}
+.foot-i{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;}
+.foot-logo{font-family:'Exo 2',sans-serif;font-size:14px;font-weight:900;color:white;letter-spacing:4px;}
+.foot-logo span{color:var(--blue);}
+.foot-copy{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--on-d3);margin-top:3px;}
+.foot-links{display:flex;gap:16px;flex-wrap:wrap;}
+.foot-links a{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--on-d3);transition:color .15s;text-transform:uppercase;letter-spacing:.5px;}
+.foot-links a:hover{color:var(--blue);text-decoration:none;}
+.foot-disclaimer{font-family:'DM Sans',sans-serif;font-size:11px;color:rgba(255,255,255,.18);line-height:1.65;max-width:1400px;margin:0 auto;padding:16px 0 0;border-top:1px solid var(--bdr-dark);}
+
+/* MOBILE */
+@media(max-width:768px){
+  .nav-i{padding:0 16px;}
+  .page-hero{padding:40px 16px 36px;}
+  .container{padding:0 16px;}
+  .toc-grid{grid-template-columns:1fr;}
+  .contact-strip{flex-direction:column;padding:22px 18px;}
+  .cs-btn{width:100%;text-align:center;padding:13px;}
+  .accept-widget{padding:24px 20px;}
+  .disclaimer-box{padding:24px 20px;}
+  .ph-title{font-size:30px;}
+  .t-section-title{font-size:22px;}
+}
+@media(max-width:480px){
+  .ph-meta{flex-direction:column;align-items:flex-start;gap:10px;}
+  .toc{padding:18px 18px;}
+  .nav-right .btn-primary-nav{padding:8px 14px;font-size:12px;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-i">
+    <a href="/" class="logo">
+      <div class="logo-a">ARCANE</div>
+      <div class="logo-t">TRACER</div>
+    </a>
+    <div class="nav-right">
+      <a href="/" class="nav-back">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Back to Feed
+      </a>
+      <button class="btn-primary-nav" onclick="window.location.href='/#access'">Get Access</button>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <div class="ph-eyebrow">Legal</div>
+    <h1 class="ph-title">Terms of Use</h1>
+    <p class="ph-sub">By accessing or using Arcane Tracer you agree to these terms. Please read them carefully, particularly the sections governing how our output may and may not be used.</p>
+    <div class="ph-meta">
+      <div class="ph-date">Effective April 2026 &nbsp;·&nbsp; Version 1.0</div>
+      <div class="ph-warning">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FF2D55" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>Professional access requires explicit acceptance</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TABLE OF CONTENTS -->
+<div class="container">
+  <div class="toc">
+    <div class="toc-title">Sections</div>
+    <div class="toc-grid">
+      <a href="#nature"><span class="toc-num">01</span>Nature of the Service</a>
+      <a href="#acceptable"><span class="toc-num">06</span>Acceptable Use</a>
+      <a href="#data"><span class="toc-num">02</span>Data and Accuracy</a>
+      <a href="#prohibited"><span class="toc-num">07</span>Prohibited Use</a>
+      <a href="#output"><span class="toc-num">03</span>Permitted Use of Output</a>
+      <a href="#accounts"><span class="toc-num">08</span>Accounts and Payment</a>
+      <a href="#limits"><span class="toc-num">04</span>Limits of Responsibility</a>
+      <a href="#disputes"><span class="toc-num">09</span>Disputes and Corrections</a>
+      <a href="#entities"><span class="toc-num">05</span>Rights of Flagged Entities</a>
+      <a href="#general"><span class="toc-num">10</span>General Terms</a>
+    </div>
+  </div>
+</div>
+
+<!-- BODY -->
+<div class="terms-body">
+<div class="container">
+
+  <!-- 01 NATURE -->
+  <section class="t-section" id="nature">
+    <div class="t-section-num">01</div>
+    <h2 class="t-section-title">Nature of the Service</h2>
+
+    <div class="t-callout t-callout-blue">
+      <div class="t-callout-title">What Arcane Tracer Is</div>
+      <div class="t-callout-body">Arcane Tracer is a financial network intelligence tool. It identifies statistical anomalies in public federal spending data and maps connections between entities using public corporate registry records. It is an analytical starting point, not a determination of fact, not a legal finding, and not a replacement for professional investigation.</div>
+    </div>
+
+    <p class="t-body">Arcane Tracer aggregates and connects data from publicly available government databases including USASpending.gov, OpenCorporates, the OFAC Specially Designated Nationals list, SEC EDGAR, CourtListener, state business registries, and the IRS Exempt Organizations database. All data displayed is sourced from these official public records.</p>
+
+    <p class="t-body"><strong>Arcane Tracer is not:</strong> a law enforcement tool, a credit reporting agency under the Fair Credit Reporting Act, a fraud determination authority, a replacement for licensed investigators or attorneys, or a journalistic fact-checking service. Our <a href="/methodology">Methodology page</a> explains in full how risk scores are calculated, what flags mean, and what they explicitly do not mean.</p>
+
+    <div class="t-callout t-callout-red">
+      <div class="t-callout-title">The Most Important Thing to Understand</div>
+      <div class="t-callout-body">A risk flag or elevated score in Arcane Tracer does not mean an entity has committed fraud or any wrongdoing. The patterns we identify have innocent explanations in many cases. Our output is appropriate as a starting point for investigation. It is never appropriate as a sole basis for publishing an accusation, taking adverse action, or making a legal determination.</div>
+    </div>
+  </section>
+
+  <hr class="t-rule">
+
+  <!-- 02 DATA -->
+  <section class="t-section" id="data">
+    <div class="t-section-num">02</div>
+    <h2 class="t-section-title">Data Sources and Accuracy</h2>
+
+    <p class="t-body">All data in Arcane Tracer is sourced from official public government databases. We do not create, estimate, or fabricate data. Every data point displayed includes the date it was retrieved from its source database.</p>
+
+    <p class="t-body">We make no representation that the underlying data sources are complete, current, or free from error. Known limitations include reporting lags of 30 to 90 days on some federal payment programs, variation in state business registry update frequency, and potential delays in OFAC list updates. The <a href="/methodology#data">full list of sources and their known limitations</a> is published on our Methodology page.</p>
+
+    <p class="t-body">Data freshness is displayed on every investigation output. Data points older than 90 days display a staleness warning. You are responsible for verifying any data point against the primary source before relying on it for any decision.</p>
+
+    <div class="t-callout t-callout-blue">
+      <div class="t-callout-title">Verify Before Acting</div>
+      <div class="t-callout-body">Always verify Arcane Tracer findings against the original primary source records before taking any action. Links to original source records are provided in every investigation output precisely for this purpose.</div>
+    </div>
+  </section>
+
+  <hr class="t-rule">
+
+  <!-- 03 PERMITTED USE -->
+  <section class="t-section" id="output">
+    <div class="t-section-num">03</div>
+    <h2 class="t-section-title">Permitted Use of Output</h2>
+
+    <p class="t-body">Arcane Tracer output, including risk scores, flag descriptions, network graphs, AI intelligence briefs, and all related data, may be used for the following purposes when accompanied by independent verification and appropriate professional judgment:</p>
+
+    <ul class="t-list">
+      <li><strong>Opening an investigation.</strong> Using output as a starting point to determine whether further investigation is warranted.</li>
+      <li><strong>Due diligence research.</strong> As one input among several in a broader due diligence process, not as the sole source of assessment.</li>
+      <li><strong>FOIA requests and public records research.</strong> Using identified connections to guide requests for additional public records.</li>
+      <li><strong>Journalism and reporting.</strong> As a lead-generating tool, provided that findings are independently verified against primary source records before publication.</li>
+      <li><strong>Compliance screening triage.</strong> As an initial screening tool in a broader compliance process that includes additional verification steps.</li>
+      <li><strong>Educational and research purposes.</strong> Academic study of public financial networks and fraud patterns in aggregate, not targeting specific entities.</li>
+    </ul>
+  </section>
+
+  <hr class="t-rule">
+
+  <!-- 04 LIMITS -->
+  <section class="t-section" id="limits">
+    <div class="t-section-num">04</div>
+    <h2 class="t-section-title">Limits of Our Responsibility</h2>
+
+    <p class="t-body">Arcane Tracer is provided as-is and as-available. We do not warrant that the service will be uninterrupted, error-free, or that the data it contains is complete or accurate. To the maximum extent permitted by applicable law, Arcane Tracer and Flavio DeOliveira LLC disclaim all warranties, express or implied.</p>
+
+    <p class="t-body">We are not liable for any direct, indirect, incidental, consequential, or punitive damages arising from your use of Arcane Tracer output. This includes but is not limited to: business losses, reputational damage to any third party, regulatory consequences, or legal liability arising from actions taken based on our output.</p>
+
+    <p class="t-body">You bear sole responsibility for any decision or action taken based on Arcane Tracer output. The presence of a risk flag or elevated score does not create a duty to act, and acting on our output without independent verification is done entirely at your own risk and judgment.</p>
+
+    <p class="t-body">Our total liability to you for any claim arising from use of Arcane Tracer shall not exceed the amount you paid for the service in the 12 months preceding the claim, or $100, whichever is greater.</p>
+  </section>
+
+  <hr class="t-rule">
+
+  <!-- 05 ENTITY RIGHTS -->
+  <section class="t-section" id="entities">
+    <div class="t-section-num">05</div>
+    <h2 class="t-section-title">Rights of Flagged Entities</h2>
+
+    <p class="t-body">If your organization appears in Arcane Tracer and you believe a flag or score is inaccurate, you have the right to request a review. All data we display is sourced from official public records. We do not create or fabricate data about any entity. However, if the underlying public data is inaccurate or outdated, we want to know.</p>
+
+    <div class="t-callout t-callout-green">
+      <div class="t-callout-title">Dispute Process</div>
+      <div class="t-callout-body">Send a dispute to <strong>support@arcanetracer.com</strong> with the entity name, the specific flag you are disputing, and any documentation that supports your position. We aim to respond in a reasonable timeframe. If a flag is confirmed to be based on inaccurate data, we work to remove it promptly.</div>
+    </div>
+
+    <p class="t-body">As a general practice we aim to show you the exact data point and source record behind any flag upon request. We cannot remove a flag solely because an entity disagrees with the pattern observation if the underlying data supports the flag under our published methodology. Our <a href="/methodology">Methodology page</a> explains the standards that govern every flag.</p>
+
+    <p class="t-body">Arcane Tracer is not a credit reporting agency. These terms and our dispute process are not governed by the Fair Credit Reporting Act. If you believe your situation requires FCRA protections, please consult qualified legal counsel.</p>
+  </section>
+
+  <hr class="t-rule">
+
+  <!-- 06 ACCEPTABLE USE -->
+  <section class="t-section" id="acceptable">
+    <div class="t-section-num">06</div>
+    <h2 class="t-section-title">Acceptable Use</h2>
+
+    <p class="t-body">By using Arcane Tracer you agree to use it responsibly, accurately represent the nature of our output to any third party, and not take adverse action against any entity based solely on Arcane Tracer output without independent verification.</p>
+
+    <p class="t-body">When sharing or citing Arcane Tracer output you must:</p>
+    <ul class="t-list">
+      <li>Accurately represent that the output is based on public data pattern analysis, not a fraud determination</li>
+      <li>Include the date the investigation was run and note that data may have changed since then</li>
+      <li>Not represent a risk score or flag as a confirmed finding of wrongdoing</li>
+      <li>Include a reference to the source data when publishing findings that reference specific entities</li>
+    </ul>
+  </section>
+
+  <hr class="t-rule">
+
+  <!-- 07 PROHIBITED USE -->
+  <section class="t-section" id="prohibited">
+    <div class="t-section-num">07</div>
+    <h2 class="t-section-title">Prohibited Use</h2>
+
+    <div class="t-callout t-callout-red">
+      <div class="t-callout-title">These Uses Are Prohibited</div>
+      <div class="t-callout-body">Violation of these prohibitions may result in immediate termination of access, and may expose you to legal liability to affected third parties. These are not guidelines. They are conditions of use.</div>
+    </div>
+
+    <ul class="t-list t-list-no">
+      <li><strong>Publishing accusations without verification.</strong> You may not publish, broadcast, or otherwise communicate that a specific entity has committed fraud or wrongdoing based solely on Arcane Tracer output without independent verification from primary source records.</li>
+      <li><strong>Adverse employment or contracting decisions.</strong> You may not deny employment, terminate employment, deny a contract, or take similar adverse action against an individual or entity based solely on Arcane Tracer output.</li>
+      <li><strong>Financial harm without verification.</strong> You may not freeze, block, withhold, or restrict financial access to any entity based solely on Arcane Tracer output.</li>
+      <li><strong>Harassment or targeting.</strong> You may not use Arcane Tracer output to harass, threaten, or intimidate any individual or organization.</li>
+      <li><strong>Reverse engineering or scraping.</strong> You may not attempt to systematically download, scrape, or replicate the Arcane Tracer database through automated means.</li>
+      <li><strong>Misrepresentation of output.</strong> You may not represent Arcane Tracer output as a legal determination, criminal finding, regulatory decision, or any form of official determination of wrongdoing.</li>
+      <li><strong>Discriminatory use.</strong> You may not use Arcane Tracer output as a basis for discrimination against any protected class. Our methodology explicitly excludes demographic characteristics from all scoring.</li>
+      <li><strong>Commercial resale without agreement.</strong> You may not resell, sublicense, or redistribute Arcane Tracer data or output without a separate written agreement.</li>
+    </ul>
+  </section>
+
+  <hr class="t-rule">
+
+  <!-- 08 ACCOUNTS -->
+  <section class="t-section" id="accounts">
+    <div class="t-section-num">08</div>
+    <h2 class="t-section-title">Accounts and Payment</h2>
+
+    <div class="t-h3">Free Tier</div>
+    <p class="t-body">The free tier provides access to the live anomaly feed and up to three entity searches per day. Free tier access does not require account creation. Free tier use is subject to device-based rate limiting. Circumventing the rate limit through technical means is prohibited under Section 07.</p>
+
+    <div class="t-h3">Professional Access</div>
+    <p class="t-body">Professional access is granted by request and requires explicit acceptance of these terms at the time of registration. Payment is processed through Stripe. Your subscription renews monthly unless cancelled. Cancellation takes effect at the end of the current billing period. You retain access through the period you have paid for.</p>
+
+    <p class="t-body">Refunds are available within 7 days of the initial payment if you have not used the service. After 7 days or after using the service, payments are non-refundable except where required by applicable law.</p>
+
+    <div class="t-h3">Account Termination</div>
+    <p class="t-body">We reserve the right to terminate or suspend access for violation of these terms, particularly Sections 06 and 07. Where possible we aim to notify you of termination by email, but we make no commitment to do so. No refund is provided for termination due to terms violations.</p>
+  </section>
+
+  <hr class="t-rule">
+
+  <!-- 09 DISPUTES -->
+  <section class="t-section" id="disputes">
+    <div class="t-section-num">09</div>
+    <h2 class="t-section-title">Disputes Between Users and Arcane Tracer</h2>
+
+    <p class="t-body">These terms are governed by the laws of the state of Florida, United States, without regard to conflict of law principles. Any dispute arising from these terms or your use of the service that cannot be resolved informally will be submitted to binding arbitration under the American Arbitration Association's consumer arbitration rules.</p>
+
+    <p class="t-body">You waive your right to participate in class action lawsuits or class-wide arbitration relating to Arcane Tracer. If this waiver is unenforceable in your jurisdiction, the remainder of this section still applies to the fullest extent permitted.</p>
+
+    <p class="t-body">Before initiating any formal dispute process, you agree to contact us at <a href="mailto:support@arcanetracer.com">support@arcanetracer.com</a> and give us 30 days to attempt to resolve the issue informally.</p>
+  </section>
+
+  <hr class="t-rule">
+
+  <!-- 10 GENERAL -->
+  <section class="t-section" id="general">
+    <div class="t-section-num">10</div>
+    <h2 class="t-section-title">General Terms</h2>
+
+    <div class="t-h3">Changes to These Terms</div>
+    <p class="t-body">We may update these terms from time to time. We aim to communicate material changes to Professional users by email in advance of the effective date. Continued use of the service after changes take effect constitutes acceptance. The effective date at the top of this page reflects the current version.</p>
+
+    <div class="t-h3">Privacy</div>
+    <p class="t-body">We collect the minimum data necessary to operate the service. For Professional users this includes your name, email, organization, and payment information processed by Stripe. We do not sell your personal data. We do not share it with third parties except as required to operate the service, specifically Stripe for payment processing, Resend for email delivery, and Supabase for data storage. A full Privacy Policy is available at <a href="/privacy">arcanetracer.com/privacy</a>.</p>
+
+    <div class="t-h3">Methodology and Standards</div>
+    <p class="t-body">Our complete methodology, including how risk scores are calculated, what every flag means, what we never flag, and the language standards every output must meet, is published publicly at <a href="/methodology">arcanetracer.com/methodology</a>. These terms incorporate the standards described there by reference. By accepting these terms you confirm you have read and understood our methodology.</p>
+
+    <div class="t-h3">Entire Agreement</div>
+    <p class="t-body">These terms, together with our Methodology page and Privacy Policy, constitute the entire agreement between you and Arcane Tracer regarding use of the service. They supersede any prior communications or agreements.</p>
+
+    <div class="t-h3">Contact</div>
+    <p class="t-body">For questions about these terms, data or flag disputes, and methodology questions, email <a href="mailto:support@arcanetracer.com">support@arcanetracer.com</a>.</p>
+  </section>
+
+  <hr class="t-rule">
+
+  <!-- FULL DISCLAIMER -->
+  <section class="t-section" id="full-disclaimer">
+    <div class="t-section-num">Disclaimer</div>
+    <h2 class="t-section-title">Full Output Disclaimer</h2>
+    <p class="t-body">The following disclaimer appears on every investigation output, shared link, PDF export, and AI brief generated by Arcane Tracer. It is reproduced here in full so that users understand it before registering.</p>
+    <div class="disclaimer-box">
+      <div class="disclaimer-label">Appears on All Investigation Outputs</div>
+      <div class="disclaimer-text">
+        <p>This report is generated entirely from publicly available government records and databases. It is an automated analytical output, not a determination of fact, and not a legal conclusion of any kind.</p>
+        <p>The risk flags, scores, and patterns identified in this report are statistical observations based on publicly documented fraud indicators. The presence of these patterns does not indicate that the entities identified have engaged in fraud, wrongdoing, or any illegal activity. Many of the patterns identified have entirely innocent explanations.</p>
+        <p>This report is intended as a starting point for investigation only. It is not appropriate as a sole basis for publishing an accusation, filing a regulatory complaint, denying a contract, freezing an account, or taking any other action that may harm a business or individual. Independent verification from qualified legal and investigative professionals is required before any such action.</p>
+        <p>Arcane Tracer makes no representations about the accuracy, completeness, or timeliness of the underlying data sources. Data may be incomplete, delayed, or in error. Always verify findings against primary source records directly.</p>
+        <p>By using this report you acknowledge that Arcane Tracer is an analytical tool, not an investigative authority, and that you bear sole responsibility for any action taken based on this information.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACCEPTANCE WIDGET -->
+  <div class="accept-widget" id="accept">
+    <div class="aw-title">Professional Access: Required Acceptance</div>
+    <div class="aw-sub">Before your Professional access is activated, you must confirm the following. This acceptance is logged with a timestamp alongside your access request.</div>
+    <div class="aw-checks">
+      <label class="aw-check">
+        <input type="checkbox" id="chk1" onchange="updateBtn()">
+        <span class="aw-check-label">I have read and agree to the <a href="/terms">Terms of Use</a>, including the sections on permitted and prohibited use of Arcane Tracer output.</span>
+      </label>
+      <label class="aw-check">
+        <input type="checkbox" id="chk2" onchange="updateBtn()">
+        <span class="aw-check-label">I have read the <a href="/methodology">Methodology page</a> and understand that risk flags and scores are pattern observations from public data, not determinations of fraud or wrongdoing.</span>
+      </label>
+      <label class="aw-check">
+        <input type="checkbox" id="chk3" onchange="updateBtn()">
+        <span class="aw-check-label">I understand that I may not take adverse action against any entity, including publishing accusations, denying contracts, or restricting financial access, based solely on Arcane Tracer output without independent verification.</span>
+      </label>
+      <label class="aw-check">
+        <input type="checkbox" id="chk4" onchange="updateBtn()">
+        <span class="aw-check-label">I understand the full output disclaimer reproduced above and agree that Arcane Tracer bears no liability for actions I take based on its output.</span>
+      </label>
+    </div>
+    <button class="aw-btn" id="accept-btn" disabled onclick="handleAccept()">
+      I Accept: Continue to Access Request
+    </button>
+    <div class="aw-note">Your acceptance is recorded with a timestamp. All four checkboxes are required.</div>
+  </div>
+
+  <!-- CONTACT STRIP -->
+  <div class="contact-strip">
+    <div class="cs-text">
+      <div class="cs-title">Questions about these terms?</div>
+      <div class="cs-sub">We are happy to clarify anything before you register.</div>
+    </div>
+    <button class="cs-btn" onclick="window.location.href='mailto:support@arcanetracer.com'">Email Us</button>
+  </div>
+
+</div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="foot-i">
+    <div>
+      <div class="foot-logo">ARCANE <span>TRACER</span></div>
+      <div class="foot-copy">© 2026 Arcane Tracer. Built by Flavio DeOliveira LLC. All rights reserved.</div>
+    </div>
+    <div class="foot-links">
+      <a href="/">Home</a>
+      <a href="/methodology">Methodology</a>
+      <a href="/terms">Terms of Use</a>
+      <a href="/privacy">Privacy Policy</a>
+      <a href="mailto:support@arcanetracer.com">Contact</a>
+    </div>
+  </div>
+  <div class="foot-disclaimer">
+    Arcane Tracer is a financial network intelligence tool that surfaces patterns in public data. It does not determine fraud or wrongdoing. All output should be independently verified before any action is taken. These terms govern all use of the platform.
+  </div>
+</footer>
+
+<script>
+// ── ACCEPTANCE WIDGET ──────────────────────────────────────
+// All 4 checkboxes must be checked to enable the button.
+// Acceptance timestamp is stored locally and passed to the
+// backend when the user submits their access request form.
+function updateBtn() {
+  const all = ['chk1','chk2','chk3','chk4'].every(id => document.getElementById(id).checked);
+  const btn = document.getElementById('accept-btn');
+  btn.disabled = !all;
+  btn.classList.toggle('active', all);
+}
+
+function handleAccept() {
+  const accepted = ['chk1','chk2','chk3','chk4'].every(id => document.getElementById(id).checked);
+  if (!accepted) return;
+
+  // Store acceptance with timestamp in sessionStorage.
+  // The access request form on index.html reads this and
+  // includes terms_accepted_at in the POST body to the backend.
+  const acceptance = {
+    accepted: true,
+    timestamp: new Date().toISOString(),
+    version: '1.0',
+    page: window.location.href
+  };
+  sessionStorage.setItem('at_terms_accepted', JSON.stringify(acceptance));
+
+  // Redirect to the access request form
+  window.location.href = '/#contact-form';
+}
+
+// ── PRE-CHECK if already accepted this session ──────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const prior = sessionStorage.getItem('at_terms_accepted');
+  if (prior) {
+    try {
+      const data = JSON.parse(prior);
+      if (data.accepted) {
+        ['chk1','chk2','chk3','chk4'].forEach(id => {
+          document.getElementById(id).checked = true;
+        });
+        updateBtn();
+      }
+    } catch(e) {}
+  }
+
+  // If #accept hash in URL, scroll to acceptance widget
+  if (window.location.hash === '#accept') {
+    setTimeout(() => {
+      document.getElementById('accept').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 400);
+  }
+});
+</script>
+
+</body>
+</html>
