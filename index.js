@@ -642,6 +642,59 @@ app.post('/api/ingest/backfill', requireAdmin, async (req, res) => {
   }
 });
 
+// ── RESUME BACKFILL ENDPOINT ────────────────────────────────
+// Re-queues any backfill pulls stuck at "queued" after a worker restart.
+app.post('/api/ingest/resume-backfill', requireAdmin, async (req, res) => {
+  try {
+    const { data: stuckPulls, error: qErr } = await supabase
+      .from('data_pulls')
+      .select('id, metadata')
+      .eq('source', 'usaspending')
+      .eq('pull_type', 'backfill')
+      .eq('status', 'queued')
+      .order('created_at', { ascending: true });
+
+    if (qErr) return res.status(500).json({ ok: false, error: 'Database query failed' });
+    if (!stuckPulls || stuckPulls.length === 0) {
+      return res.json({ ok: true, message: 'No queued backfill pulls found', resumed: 0 });
+    }
+
+    const pullIds = stuckPulls.map(p => ({ pullId: p.id, ...p.metadata }));
+
+    // Process sequentially in background
+    (async () => {
+      for (const { pullId, fiscal_year, award_type, max_pages } of pullIds) {
+        try {
+          console.log(`[Resume-Backfill] Starting pull ${pullId}: FY${fiscal_year} ${award_type}`);
+          await supabase.from('data_pulls').update({ status: 'running' }).eq('id', pullId);
+          await ingestUSASpendingWithPull(pullId, {
+            fiscal_year,
+            award_type,
+            max_pages: max_pages || 500,
+            limit_per_page: 100,
+            page_delay_ms: 500,
+            pull_type: 'Backfill'
+          });
+        } catch (err) {
+          console.error(`[Resume-Backfill] Pull ${pullId} failed:`, err.message);
+        }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      console.log(`[Resume-Backfill] All ${pullIds.length} resumed pulls finished`);
+    })().catch(err => console.error('[Resume-Backfill] Fatal error:', err.message));
+
+    return res.json({
+      ok: true,
+      message: `Resumed ${pullIds.length} queued backfill pulls`,
+      resumed: pullIds.length,
+      pull_ids: pullIds.map(p => ({ pull_id: p.pullId, fiscal_year: p.fiscal_year, award_type: p.award_type }))
+    });
+  } catch (err) {
+    console.error('Resume-backfill endpoint error:', err);
+    return res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
 // ── CRON ENDPOINTS ──────────────────────────────────────────
 function requireCronSecret(req, res, next) {
   const secret = req.query.secret || req.headers['x-cron-secret'] || '';
