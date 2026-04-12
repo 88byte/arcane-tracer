@@ -587,6 +587,24 @@ footer{background:var(--void);border-top:1px solid var(--bdr-dark);padding:36px 
 .fi:nth-child(3){animation-delay:.3s;}
 .fi:nth-child(4){animation-delay:.4s;}
 .fi:nth-child(5){animation-delay:.5s;}
+
+/* accept-terms modal */
+.at-tm{position:fixed;inset:0;background:rgba(5,15,30,.78);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px;backdrop-filter:blur(4px);}
+.at-tm.open{display:flex;}
+.at-tm-card{background:#0a1828;border:1px solid var(--bdr-dark);max-width:520px;width:100%;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.6);}
+.at-tm-title{font-family:'Exo 2',sans-serif;font-size:22px;font-weight:700;color:var(--on-d1);margin-bottom:14px;letter-spacing:.3px;}
+.at-tm-body{font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.6;color:var(--on-d3);margin-bottom:22px;}
+.at-tm-row{display:flex;align-items:flex-start;gap:10px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--on-d2);margin-bottom:14px;cursor:pointer;line-height:1.5;}
+.at-tm-row input[type=checkbox]{margin-top:3px;width:16px;height:16px;accent-color:var(--blue);flex-shrink:0;cursor:pointer;}
+.at-tm-row a{color:var(--blue);text-decoration:underline;}
+.at-tm-row a:hover{color:var(--blue-b);}
+.at-tm-err{font-family:'DM Sans',sans-serif;font-size:13px;color:#ff6b6b;min-height:18px;margin:6px 0 12px;}
+.at-tm-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px;}
+.at-tm-cancel{font-family:'Exo 2',sans-serif;font-size:13px;font-weight:700;color:var(--on-d2);background:transparent;border:1px solid var(--bdr-dark);padding:11px 22px;letter-spacing:.3px;cursor:pointer;transition:all .2s;}
+.at-tm-cancel:hover{border-color:rgba(255,255,255,.3);}
+.at-tm-accept{font-family:'Exo 2',sans-serif;font-size:13px;font-weight:700;color:white;background:var(--blue);border:none;padding:11px 22px;letter-spacing:.3px;cursor:pointer;box-shadow:var(--sh-blue);transition:all .2s;}
+.at-tm-accept:hover:not(:disabled){background:var(--blue-b);transform:translateY(-1px);}
+.at-tm-accept:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;}
 </style>
 </head>
 <body>
@@ -1429,7 +1447,78 @@ async function incrementUsage() {
   localStorage.setItem(key, (parseInt(localStorage.getItem(key)||'0')+1));
 }
 
-async function handleSearch() {
+// ─── ACCEPT-TERMS GATE ────────────────────────────────────────
+const AT_TERMS_API = 'https://api.arcanetracer.com';
+const AT_TERMS_VERSION = '1.0';
+let _atTermsAcceptedSession = false;
+
+async function _atCheckTerms() {
+  if (_atTermsAcceptedSession) return true;
+  try {
+    const fp = await getFingerprint();
+    const r = await fetch(AT_TERMS_API + '/api/check-terms?fingerprint=' + encodeURIComponent(fp) + '&version=' + AT_TERMS_VERSION);
+    if (!r.ok) return false;
+    const j = await r.json();
+    if (j && j.accepted === true) { _atTermsAcceptedSession = true; return true; }
+    return false;
+  } catch (e) { return false; }
+}
+
+function _atOpenTermsModal() {
+  const m = document.getElementById('terms-modal');
+  if (!m) return;
+  document.getElementById('at-tm-cb1').checked = false;
+  document.getElementById('at-tm-cb2').checked = false;
+  document.getElementById('at-tm-err').textContent = '';
+  document.getElementById('at-tm-accept').disabled = true;
+  m.classList.add('open');
+  m.setAttribute('aria-hidden','false');
+  document.body.style.overflow = 'hidden';
+}
+
+function _atCloseTermsModal() {
+  const m = document.getElementById('terms-modal');
+  if (!m) return;
+  m.classList.remove('open');
+  m.setAttribute('aria-hidden','true');
+  document.body.style.overflow = '';
+}
+
+async function _atSubmitAcceptance() {
+  const errEl = document.getElementById('at-tm-err');
+  const btn = document.getElementById('at-tm-accept');
+  errEl.textContent = '';
+  btn.disabled = true;
+  try {
+    const fp = await getFingerprint();
+    const r = await fetch(AT_TERMS_API + '/api/accept-terms', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ fingerprint: fp, terms_version: '1.0', methodology_version: '1.0' })
+    });
+    if (!r.ok) throw new Error('status ' + r.status);
+    _atTermsAcceptedSession = true;
+    _atCloseTermsModal();
+    _runSearchCore();
+  } catch (e) {
+    errEl.textContent = 'Could not record acceptance. Please try again.';
+    btn.disabled = false;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const cb1 = document.getElementById('at-tm-cb1');
+  const cb2 = document.getElementById('at-tm-cb2');
+  const acc = document.getElementById('at-tm-accept');
+  const can = document.getElementById('at-tm-cancel');
+  const upd = () => { if (acc) acc.disabled = !(cb1.checked && cb2.checked); };
+  if (cb1) cb1.addEventListener('change', upd);
+  if (cb2) cb2.addEventListener('change', upd);
+  if (acc) acc.addEventListener('click', _atSubmitAcceptance);
+  if (can) can.addEventListener('click', _atCloseTermsModal);
+});
+
+async function _runSearchCore() {
   const input = document.getElementById('search-input');
   const banner = document.getElementById('limit-banner');
   if (!input.value.trim()) return;
@@ -1438,6 +1527,14 @@ async function handleSearch() {
   await incrementUsage();
   banner.style.display = 'none';
   console.log('Search:', input.value); // wire to API on launch
+}
+
+async function handleSearch() {
+  const input = document.getElementById('search-input');
+  if (!input || !input.value.trim()) return;
+  const ok = await _atCheckTerms();
+  if (ok) { _runSearchCore(); return; }
+  _atOpenTermsModal();
 }
 
 document.getElementById('search-input').addEventListener('keydown', e => {
@@ -1611,5 +1708,28 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
   document.addEventListener('scroll', attach, { passive:true });
 })();
 </script>
+
+<!-- accept-terms modal -->
+<div id="terms-modal" class="at-tm" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="at-tm-title">
+  <div class="at-tm-card">
+    <div class="at-tm-title" id="at-tm-title">Before you search</div>
+    <div class="at-tm-body">
+      Arcane Tracer surfaces signals from public records. Findings are leads, not conclusions, and require independent verification before any action is taken.
+    </div>
+    <label class="at-tm-row">
+      <input type="checkbox" id="at-tm-cb1">
+      <span>I accept the <a href="/terms" target="_blank" rel="noopener">Terms of Service</a></span>
+    </label>
+    <label class="at-tm-row">
+      <input type="checkbox" id="at-tm-cb2">
+      <span>I accept the <a href="/methodology" target="_blank" rel="noopener">Methodology</a> and understand findings require independent verification</span>
+    </label>
+    <div class="at-tm-err" id="at-tm-err"></div>
+    <div class="at-tm-actions">
+      <button type="button" class="at-tm-cancel" id="at-tm-cancel">Cancel</button>
+      <button type="button" class="at-tm-accept" id="at-tm-accept" disabled>Accept and Search</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
