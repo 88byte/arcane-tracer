@@ -376,7 +376,7 @@ async function ingestUSASpendingWithPull(pullId, options = {}) {
         ],
         page,
         limit: limit_per_page,
-        sort: 'Total Obligation',
+        sort: 'Award Amount',
         order: 'desc'
       };
 
