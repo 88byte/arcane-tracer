@@ -289,6 +289,315 @@ app.post('/api/accept-terms', async (req, res) => {
   }
 });
 
+// ── ADMIN AUTH MIDDLEWARE ────────────────────────────────────
+function requireAdmin(req, res, next) {
+  const key = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+  if (!key || key !== process.env.ADMIN_API_KEY) {
+    return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  }
+  next();
+}
+
+// ── INGESTION ENDPOINTS ─────────────────────────────────────
+app.post('/api/ingest/usaspending', requireAdmin, async (req, res) => {
+  try {
+    const {
+      fiscal_year = new Date().getFullYear(),
+      award_type = 'contracts',
+      max_pages = 10
+    } = req.body || {};
+
+    // Create pull row synchronously to return the ID
+    const { data: pull, error: pullErr } = await supabase
+      .from('data_pulls')
+      .insert({
+        source: 'usaspending',
+        pull_type: 'incremental',
+        status: 'running',
+        metadata: { fiscal_year, award_type, max_pages }
+      })
+      .select('id')
+      .single();
+
+    if (pullErr) {
+      return res.status(500).json({ ok: false, error: 'Failed to create pull record' });
+    }
+
+    // Kick off ingestion async (don't await)
+    ingestUSASpendingWithPull(pull.id, { fiscal_year, award_type, max_pages }).catch(err => {
+      console.error(`[USASpending] Async ingestion error for pull ${pull.id}:`, err.message);
+    });
+
+    return res.json({ ok: true, pull_id: pull.id, message: 'Ingestion started' });
+  } catch (err) {
+    console.error('Ingest endpoint error:', err);
+    return res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
+// Variant that uses an existing pull ID (for the async kickoff from the endpoint)
+async function ingestUSASpendingWithPull(pullId, options = {}) {
+  const {
+    fiscal_year = new Date().getFullYear(),
+    award_type = 'contracts',
+    limit_per_page = 100,
+    max_pages = 10
+  } = options;
+
+  let recordsFetched = 0;
+  let recordsCreated = 0;
+  let recordsUpdated = 0;
+
+  console.log(`[USASpending] Pull ${pullId} started: FY${fiscal_year} ${award_type}, max ${max_pages} pages`);
+
+  try {
+    const typeMap = {
+      contracts: ['A', 'B', 'C', 'D'],
+      grants: ['02', '03', '04', '05'],
+      loans: ['07', '08'],
+      direct_payments: ['06', '10'],
+      other: ['09', '11']
+    };
+    const awardTypes = typeMap[award_type] || typeMap.contracts;
+
+    for (let page = 1; page <= max_pages; page++) {
+      const body = {
+        filters: {
+          time_period: [{ start_date: `${fiscal_year}-10-01`, end_date: `${fiscal_year + 1}-09-30` }],
+          award_type_codes: awardTypes
+        },
+        fields: [
+          'Award ID', 'Recipient Name', 'Recipient DUNS Number',
+          'Recipient UEI', 'Award Amount', 'Total Obligation',
+          'Awarding Agency', 'Funding Agency', 'Description',
+          'Start Date', 'End Date', 'Award Type',
+          'recipient_id', 'internal_id',
+          'Recipient State Code', 'Recipient Country Code'
+        ],
+        page,
+        limit: limit_per_page,
+        sort: 'Total Obligation',
+        order: 'desc'
+      };
+
+      const resp = await fetch('https://api.usaspending.gov/api/v2/search/spending_by_award/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error(`USASpending API error ${resp.status}: ${errText.slice(0, 200)}`);
+      }
+
+      const data = await resp.json();
+      const results = data.results || [];
+
+      if (results.length === 0) {
+        console.log(`[USASpending] Page ${page}: no more results, stopping`);
+        break;
+      }
+
+      recordsFetched += results.length;
+
+      for (const award of results) {
+        const recipientName = award['Recipient Name'] || award.recipient_name || 'Unknown';
+        const uei = award['Recipient UEI'] || award.recipient_uei || null;
+        const duns = award['Recipient DUNS Number'] || award.recipient_duns || null;
+        const stateCode = award['Recipient State Code'] || null;
+        const countryCode = award['Recipient Country Code'] || 'US';
+
+        let entityId;
+        const entityRow = {
+          name: recipientName,
+          entity_type: 'contractor',
+          uei: uei || null,
+          duns: duns || null,
+          state: stateCode,
+          country: countryCode,
+          source: 'usaspending',
+          updated_at: new Date().toISOString()
+        };
+
+        let existing = null;
+        if (uei) {
+          const { data: found } = await supabase
+            .from('entities')
+            .select('id')
+            .eq('uei', uei)
+            .maybeSingle();
+          existing = found;
+        }
+        if (!existing && duns) {
+          const { data: found } = await supabase
+            .from('entities')
+            .select('id')
+            .eq('duns', duns)
+            .maybeSingle();
+          existing = found;
+        }
+
+        if (existing) {
+          entityId = existing.id;
+          await supabase.from('entities').update(entityRow).eq('id', entityId);
+          recordsUpdated++;
+        } else {
+          const { data: inserted, error: entErr } = await supabase
+            .from('entities')
+            .insert(entityRow)
+            .select('id')
+            .single();
+          if (entErr) {
+            console.error(`[USASpending] Entity insert error for "${recipientName}":`, entErr.message);
+            continue;
+          }
+          entityId = inserted.id;
+          recordsCreated++;
+        }
+
+        const awardId = award['Award ID'] || award.internal_id || `usa-${Date.now()}-${Math.random()}`;
+        const awardRow = {
+          entity_id: entityId,
+          award_type: award['Award Type'] || award_type,
+          award_id: awardId,
+          amount_obligated: parseFloat(award['Total Obligation']) || 0,
+          total_value: parseFloat(award['Award Amount']) || 0,
+          awarding_agency: award['Awarding Agency'] || null,
+          funding_agency: award['Funding Agency'] || null,
+          description: award['Description'] || null,
+          period_start: award['Start Date'] || null,
+          period_end: award['End Date'] || null,
+          source: 'usaspending',
+          source_url: `https://www.usaspending.gov/award/${awardId}`,
+          raw_data: award
+        };
+
+        const { error: awdErr } = await supabase
+          .from('awards')
+          .upsert(awardRow, { onConflict: 'award_id' });
+
+        if (awdErr) {
+          console.error(`[USASpending] Award upsert error for "${awardId}":`, awdErr.message);
+        }
+      }
+
+      if (page % 10 === 0 || page === max_pages || results.length < limit_per_page) {
+        console.log(`[USASpending] Progress: page ${page}/${max_pages}, fetched=${recordsFetched}, created=${recordsCreated}, updated=${recordsUpdated}`);
+      }
+
+      if (page < max_pages && results.length > 0) {
+        await new Promise(r => setTimeout(r, 200));
+      }
+    }
+
+    await supabase.from('data_pulls').update({
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+      records_fetched: recordsFetched,
+      records_created: recordsCreated,
+      records_updated: recordsUpdated
+    }).eq('id', pullId);
+
+    console.log(`[USASpending] Pull ${pullId} completed: fetched=${recordsFetched}, created=${recordsCreated}, updated=${recordsUpdated}`);
+    return { pullId, recordsFetched, recordsCreated, recordsUpdated };
+
+  } catch (err) {
+    console.error(`[USASpending] Pull ${pullId} failed:`, err.message);
+    await supabase.from('data_pulls').update({
+      status: 'failed',
+      completed_at: new Date().toISOString(),
+      error_message: err.message,
+      records_fetched: recordsFetched,
+      records_created: recordsCreated,
+      records_updated: recordsUpdated
+    }).eq('id', pullId);
+    throw err;
+  }
+}
+
+app.get('/api/ingest/status/:pull_id', requireAdmin, async (req, res) => {
+  const { data, error } = await supabase
+    .from('data_pulls')
+    .select('*')
+    .eq('id', req.params.pull_id)
+    .maybeSingle();
+
+  if (error) return res.status(500).json({ ok: false, error: 'Database error' });
+  if (!data) return res.status(404).json({ ok: false, error: 'Pull not found' });
+  return res.json({ ok: true, pull: data });
+});
+
+// ── PUBLIC ENTITY/AWARD ENDPOINTS ───────────────────────────
+app.get('/api/entities', async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const search = req.query.search || null;
+    const offset = (page - 1) * limit;
+
+    let query = supabase
+      .from('entities')
+      .select(`
+        id, name, entity_type, uei, duns, state, country, source, created_at, updated_at,
+        risk_scores ( total_score, flag_count )
+      `, { count: 'exact' })
+      .range(offset, offset + limit - 1)
+      .order('created_at', { ascending: false });
+
+    if (search) {
+      query = query.ilike('name', `%${search}%`);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      console.error('Entities query error:', error);
+      return res.status(500).json({ ok: false, error: 'Database error' });
+    }
+
+    // Flatten risk_scores (it comes as an array from the join)
+    const entities = (data || []).map(e => {
+      const rs = Array.isArray(e.risk_scores) ? e.risk_scores[0] : e.risk_scores;
+      return {
+        ...e,
+        risk_scores: undefined,
+        total_score: rs?.total_score ?? null,
+        flag_count: rs?.flag_count ?? null
+      };
+    });
+
+    return res.json({
+      ok: true,
+      entities,
+      pagination: { page, limit, total: count, pages: Math.ceil((count || 0) / limit) }
+    });
+  } catch (err) {
+    console.error('Entities endpoint error:', err);
+    return res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
+app.get('/api/awards/:entity_id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('awards')
+      .select('*')
+      .eq('entity_id', req.params.entity_id)
+      .order('amount_obligated', { ascending: false });
+
+    if (error) {
+      console.error('Awards query error:', error);
+      return res.status(500).json({ ok: false, error: 'Database error' });
+    }
+
+    return res.json({ ok: true, awards: data || [] });
+  } catch (err) {
+    console.error('Awards endpoint error:', err);
+    return res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
 // ── START ─────────────────────────────────────────────────────
 app.listen(port, () => {
   console.log(`Arcane Tracer API running on port ${port}`);
