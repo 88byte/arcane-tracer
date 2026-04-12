@@ -335,15 +335,49 @@ app.post('/api/ingest/usaspending', requireAdmin, async (req, res) => {
   }
 });
 
+// ── INGESTION EMAIL NOTIFICATION ────────────────────────────
+async function sendIngestionEmail(pullId, { source, pull_type, status, recordsFetched, recordsCreated, recordsUpdated, durationMs, errorMessage }) {
+  try {
+    const durationStr = durationMs
+      ? `${Math.floor(durationMs / 60000)}m ${Math.floor((durationMs % 60000) / 1000)}s`
+      : 'unknown';
+    const statusEmoji = status === 'completed' ? 'OK' : 'FAILED';
+    const subject = `[Arcane Tracer] Ingestion ${statusEmoji}: ${source} ${pull_type}`;
+    const body = [
+      `Pull ID: ${pullId}`,
+      `Source: ${source}`,
+      `Pull Type: ${pull_type}`,
+      `Status: ${status}`,
+      `Records Fetched: ${recordsFetched}`,
+      `Records Created: ${recordsCreated}`,
+      `Records Updated: ${recordsUpdated}`,
+      `Duration: ${durationStr}`,
+      errorMessage ? `Error: ${errorMessage}` : null
+    ].filter(Boolean).join('\n');
+
+    await resend.emails.send({
+      from: 'Arcane Tracer <onboarding@resend.dev>',
+      to: [process.env.OWNER_EMAIL],
+      subject,
+      text: body
+    });
+    console.log(`[Notification] Ingestion email sent for pull ${pullId}`);
+  } catch (emailErr) {
+    console.error(`[Notification] Failed to send ingestion email for pull ${pullId}:`, emailErr.message);
+  }
+}
+
 // Variant that uses an existing pull ID (for the async kickoff from the endpoint)
 async function ingestUSASpendingWithPull(pullId, options = {}) {
   const {
     fiscal_year = new Date().getFullYear(),
     award_type = 'contracts',
     limit_per_page = 100,
-    max_pages = 10
+    max_pages = 10,
+    page_delay_ms = 200
   } = options;
 
+  const startTime = Date.now();
   let recordsFetched = 0;
   let recordsCreated = 0;
   let recordsUpdated = 0;
@@ -476,11 +510,11 @@ async function ingestUSASpendingWithPull(pullId, options = {}) {
       }
 
       if (page % 10 === 0 || page === max_pages || results.length < limit_per_page) {
-        console.log(`[USASpending] Progress: page ${page}/${max_pages}, fetched=${recordsFetched}, created=${recordsCreated}, updated=${recordsUpdated}`);
+        console.log(`[USASpending] ${options.pull_type || 'Pull'} FY${fiscal_year} ${award_type}: page ${page}/${max_pages}, ${recordsFetched} records so far`);
       }
 
       if (page < max_pages && results.length > 0) {
-        await new Promise(r => setTimeout(r, 200));
+        await new Promise(r => setTimeout(r, page_delay_ms));
       }
     }
 
@@ -492,10 +526,18 @@ async function ingestUSASpendingWithPull(pullId, options = {}) {
       records_updated: recordsUpdated
     }).eq('id', pullId);
 
+    const durationMs = Date.now() - startTime;
     console.log(`[USASpending] Pull ${pullId} completed: fetched=${recordsFetched}, created=${recordsCreated}, updated=${recordsUpdated}`);
+
+    await sendIngestionEmail(pullId, {
+      source: 'usaspending', pull_type: `FY${fiscal_year} ${award_type}`,
+      status: 'completed', recordsFetched, recordsCreated, recordsUpdated, durationMs
+    });
+
     return { pullId, recordsFetched, recordsCreated, recordsUpdated };
 
   } catch (err) {
+    const durationMs = Date.now() - startTime;
     console.error(`[USASpending] Pull ${pullId} failed:`, err.message);
     await supabase.from('data_pulls').update({
       status: 'failed',
@@ -505,6 +547,13 @@ async function ingestUSASpendingWithPull(pullId, options = {}) {
       records_created: recordsCreated,
       records_updated: recordsUpdated
     }).eq('id', pullId);
+
+    await sendIngestionEmail(pullId, {
+      source: 'usaspending', pull_type: `FY${fiscal_year} ${award_type}`,
+      status: 'failed', recordsFetched, recordsCreated, recordsUpdated, durationMs,
+      errorMessage: err.message
+    });
+
     throw err;
   }
 }
@@ -519,6 +568,155 @@ app.get('/api/ingest/status/:pull_id', requireAdmin, async (req, res) => {
   if (error) return res.status(500).json({ ok: false, error: 'Database error' });
   if (!data) return res.status(404).json({ ok: false, error: 'Pull not found' });
   return res.json({ ok: true, pull: data });
+});
+
+// ── BACKFILL ENDPOINT ───────────────────────────────────────
+app.post('/api/ingest/backfill', requireAdmin, async (req, res) => {
+  try {
+    const {
+      start_year = 2020,
+      end_year = 2025,
+      award_types = ['contracts', 'grants'],
+      max_pages_per_pull = 500
+    } = req.body || {};
+
+    const pulls = [];
+    for (let year = start_year; year <= end_year; year++) {
+      for (const awardType of award_types) {
+        pulls.push({ fiscal_year: year, award_type: awardType });
+      }
+    }
+
+    // Create all pull records up front
+    const pullIds = [];
+    for (const p of pulls) {
+      const { data: pull, error: pullErr } = await supabase
+        .from('data_pulls')
+        .insert({
+          source: 'usaspending',
+          pull_type: 'backfill',
+          status: 'queued',
+          metadata: { fiscal_year: p.fiscal_year, award_type: p.award_type, max_pages: max_pages_per_pull }
+        })
+        .select('id')
+        .single();
+      if (pullErr) {
+        console.error(`[Backfill] Failed to create pull for FY${p.fiscal_year} ${p.award_type}:`, pullErr.message);
+        continue;
+      }
+      pullIds.push({ ...p, pullId: pull.id });
+    }
+
+    // Kick off sequential processing in background
+    (async () => {
+      for (const { fiscal_year, award_type, pullId } of pullIds) {
+        try {
+          console.log(`[Backfill] Starting FY${fiscal_year} ${award_type} (pull ${pullId})`);
+          await supabase.from('data_pulls').update({ status: 'running' }).eq('id', pullId);
+          await ingestUSASpendingWithPull(pullId, {
+            fiscal_year,
+            award_type,
+            max_pages: max_pages_per_pull,
+            limit_per_page: 100,
+            page_delay_ms: 500,
+            pull_type: 'Backfill'
+          });
+        } catch (err) {
+          console.error(`[Backfill] FY${fiscal_year} ${award_type} failed:`, err.message);
+        }
+        // 500ms cooldown between pulls
+        await new Promise(r => setTimeout(r, 500));
+      }
+      console.log(`[Backfill] All ${pullIds.length} pulls finished`);
+    })().catch(err => console.error('[Backfill] Fatal error:', err.message));
+
+    return res.json({
+      ok: true,
+      message: `Backfill started for ${pullIds.length} pulls`,
+      pull_count: pullIds.length,
+      pull_ids: pullIds.map(p => ({ pull_id: p.pullId, fiscal_year: p.fiscal_year, award_type: p.award_type }))
+    });
+  } catch (err) {
+    console.error('Backfill endpoint error:', err);
+    return res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
+// ── CRON ENDPOINTS ──────────────────────────────────────────
+function requireCronSecret(req, res, next) {
+  const secret = req.query.secret || req.headers['x-cron-secret'] || '';
+  if (!secret || secret !== process.env.CRON_SECRET) {
+    return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  }
+  next();
+}
+
+// Daily at 3 AM ET: incremental pull of current FY contracts + grants
+app.get('/api/cron/daily', requireCronSecret, async (req, res) => {
+  try {
+    const now = new Date();
+    const fy = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
+    const awardTypes = ['contracts', 'grants'];
+    const pullIds = [];
+
+    for (const awardType of awardTypes) {
+      const { data: pull, error: pullErr } = await supabase
+        .from('data_pulls')
+        .insert({
+          source: 'usaspending',
+          pull_type: 'daily_incremental',
+          status: 'running',
+          metadata: { fiscal_year: fy, award_type: awardType, max_pages: 10 }
+        })
+        .select('id')
+        .single();
+      if (pullErr) continue;
+      pullIds.push(pull.id);
+
+      ingestUSASpendingWithPull(pull.id, {
+        fiscal_year: fy, award_type: awardType, max_pages: 10
+      }).catch(err => console.error(`[Cron/Daily] ${awardType} failed:`, err.message));
+    }
+
+    return res.json({ ok: true, type: 'daily', fiscal_year: fy, pull_ids: pullIds });
+  } catch (err) {
+    console.error('Cron daily error:', err);
+    return res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
+// Weekly on Sunday at 2 AM ET: full refresh of current FY
+app.get('/api/cron/weekly', requireCronSecret, async (req, res) => {
+  try {
+    const now = new Date();
+    const fy = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
+    const awardTypes = ['contracts', 'grants'];
+    const pullIds = [];
+
+    for (const awardType of awardTypes) {
+      const { data: pull, error: pullErr } = await supabase
+        .from('data_pulls')
+        .insert({
+          source: 'usaspending',
+          pull_type: 'weekly_full',
+          status: 'running',
+          metadata: { fiscal_year: fy, award_type: awardType, max_pages: 200 }
+        })
+        .select('id')
+        .single();
+      if (pullErr) continue;
+      pullIds.push(pull.id);
+
+      ingestUSASpendingWithPull(pull.id, {
+        fiscal_year: fy, award_type: awardType, max_pages: 200
+      }).catch(err => console.error(`[Cron/Weekly] ${awardType} failed:`, err.message));
+    }
+
+    return res.json({ ok: true, type: 'weekly', fiscal_year: fy, pull_ids: pullIds });
+  } catch (err) {
+    console.error('Cron weekly error:', err);
+    return res.status(500).json({ ok: false, error: 'Server error' });
+  }
 });
 
 // ── PUBLIC ENTITY/AWARD ENDPOINTS ───────────────────────────
