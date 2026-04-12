@@ -367,12 +367,9 @@ async function ingestUSASpendingWithPull(pullId, options = {}) {
           award_type_codes: awardTypes
         },
         fields: [
-          'Award ID', 'Recipient Name', 'Recipient DUNS Number',
-          'Recipient UEI', 'Award Amount', 'Total Obligation',
-          'Awarding Agency', 'Funding Agency', 'Description',
-          'Start Date', 'End Date', 'Award Type',
-          'recipient_id', 'internal_id',
-          'Recipient State Code', 'Recipient Country Code'
+          'Award ID', 'Recipient Name', 'Recipient UEI',
+          'Award Amount', 'Awarding Agency', 'Funding Agency',
+          'Description', 'Start Date', 'End Date', 'Award Type'
         ],
         page,
         limit: limit_per_page,
@@ -402,11 +399,9 @@ async function ingestUSASpendingWithPull(pullId, options = {}) {
       recordsFetched += results.length;
 
       for (const award of results) {
-        const recipientName = award['Recipient Name'] || award.recipient_name || 'Unknown';
-        const uei = award['Recipient UEI'] || award.recipient_uei || null;
-        const duns = award['Recipient DUNS Number'] || award.recipient_duns || null;
-        const stateCode = award['Recipient State Code'] || null;
-        const countryCode = award['Recipient Country Code'] || 'US';
+        const recipientName = award['Recipient Name'] || 'Unknown';
+        const uei = award['Recipient UEI'] || null;
+        const duns = null; // DUNS not available in search results
 
         let entityId;
         const entityRow = {
@@ -414,8 +409,6 @@ async function ingestUSASpendingWithPull(pullId, options = {}) {
           entity_type: 'contractor',
           uei: uei || null,
           duns: duns || null,
-          state: stateCode,
-          country: countryCode,
           source: 'usaspending',
           updated_at: new Date().toISOString()
         };
@@ -456,12 +449,12 @@ async function ingestUSASpendingWithPull(pullId, options = {}) {
           recordsCreated++;
         }
 
-        const awardId = award['Award ID'] || award.internal_id || `usa-${Date.now()}-${Math.random()}`;
+        const awardId = award['Award ID'] || award.generated_internal_id || `usa-${Date.now()}-${Math.random()}`;
         const awardRow = {
           entity_id: entityId,
           award_type: award['Award Type'] || award_type,
           award_id: awardId,
-          amount_obligated: parseFloat(award['Total Obligation']) || 0,
+          amount_obligated: parseFloat(award['Award Amount']) || 0,
           total_value: parseFloat(award['Award Amount']) || 0,
           awarding_agency: award['Awarding Agency'] || null,
           funding_agency: award['Funding Agency'] || null,
