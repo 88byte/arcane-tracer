@@ -789,6 +789,394 @@ app.get('/api/awards/:entity_id', async (req, res) => {
   }
 });
 
+// ── OPENCORPORATES INGESTION ────────────────────────────────
+async function ingestOpenCorporates(pullId) {
+  const startTime = Date.now();
+  let recordsFetched = 0;
+  let recordsUpdated = 0;
+  const MAX_REQUESTS = 190; // stay under 200/day free tier
+  const DELAY_MS = 1200; // ~1.2s between requests to be safe
+
+  console.log(`[OpenCorporates] Pull ${pullId} started`);
+
+  try {
+    // Get entities missing OpenCorporates data
+    const { data: entities, error: qErr } = await supabase
+      .from('entities')
+      .select('id, name, incorporation_date, metadata')
+      .or('incorporation_date.is.null,metadata->>opencorporates_id.is.null')
+      .limit(MAX_REQUESTS);
+
+    if (qErr) throw new Error(`Entity query failed: ${qErr.message}`);
+    if (!entities || entities.length === 0) {
+      console.log('[OpenCorporates] No entities need enrichment');
+      await supabase.from('data_pulls').update({
+        status: 'completed', completed_at: new Date().toISOString(),
+        records_fetched: 0, records_updated: 0
+      }).eq('id', pullId);
+      await sendIngestionEmail(pullId, {
+        source: 'opencorporates', pull_type: 'enrichment', status: 'completed',
+        recordsFetched: 0, recordsCreated: 0, recordsUpdated: 0,
+        durationMs: Date.now() - startTime
+      });
+      return { pullId, recordsFetched: 0, recordsUpdated: 0 };
+    }
+
+    let requestCount = 0;
+    for (const entity of entities) {
+      if (requestCount >= MAX_REQUESTS) {
+        console.log(`[OpenCorporates] Hit rate limit ceiling (${MAX_REQUESTS}), stopping`);
+        break;
+      }
+
+      try {
+        const searchUrl = `https://api.opencorporates.com/v0.4/companies/search?q=${encodeURIComponent(entity.name)}&format=json`;
+        const resp = await fetch(searchUrl);
+        requestCount++;
+        recordsFetched++;
+
+        if (!resp.ok) {
+          if (resp.status === 429) {
+            console.log('[OpenCorporates] Rate limited, stopping');
+            break;
+          }
+          console.warn(`[OpenCorporates] Search failed for "${entity.name}": ${resp.status}`);
+          continue;
+        }
+
+        const data = await resp.json();
+        const companies = data?.results?.companies || [];
+
+        // Find best match: exact name match (case-insensitive)
+        const match = companies.find(c => {
+          const ocName = (c.company?.name || '').toLowerCase().trim();
+          const entName = entity.name.toLowerCase().trim();
+          return ocName === entName;
+        });
+
+        if (!match) continue;
+
+        const co = match.company;
+        const updates = {
+          metadata: {
+            ...(entity.metadata || {}),
+            opencorporates_id: co.company_number,
+            opencorporates_jurisdiction: co.jurisdiction_code,
+            opencorporates_fetched_at: new Date().toISOString()
+          },
+          opencorporates_url: co.opencorporates_url || null,
+          company_status: co.current_status || null,
+          updated_at: new Date().toISOString()
+        };
+
+        if (co.incorporation_date && !entity.incorporation_date) {
+          updates.incorporation_date = co.incorporation_date;
+        }
+        if (co.dissolution_date) {
+          updates.dissolution_date = co.dissolution_date;
+        }
+        if (co.registered_address_in_full) {
+          updates.registered_agent = co.registered_address_in_full;
+        }
+
+        // Fetch officers if we have a detail URL (costs 1 more request)
+        if (co.jurisdiction_code && co.company_number && requestCount < MAX_REQUESTS) {
+          try {
+            const detailUrl = `https://api.opencorporates.com/v0.4/companies/${co.jurisdiction_code}/${co.company_number}?format=json`;
+            const detResp = await fetch(detailUrl);
+            requestCount++;
+            if (detResp.ok) {
+              const detData = await detResp.json();
+              const officers = (detData?.results?.company?.officers || []).map(o => ({
+                name: o.officer?.name,
+                position: o.officer?.position,
+                start_date: o.officer?.start_date,
+                end_date: o.officer?.end_date
+              }));
+              if (officers.length > 0) {
+                updates.officers = officers;
+              }
+              if (detData?.results?.company?.registered_agent) {
+                updates.registered_agent = detData.results.company.registered_agent.name || updates.registered_agent;
+              }
+            }
+          } catch (detErr) {
+            console.warn(`[OpenCorporates] Detail fetch failed for ${co.company_number}:`, detErr.message);
+          }
+        }
+
+        const { error: upErr } = await supabase
+          .from('entities')
+          .update(updates)
+          .eq('id', entity.id);
+
+        if (upErr) {
+          console.warn(`[OpenCorporates] Update failed for entity ${entity.id}:`, upErr.message);
+        } else {
+          recordsUpdated++;
+        }
+      } catch (entityErr) {
+        console.warn(`[OpenCorporates] Error processing "${entity.name}":`, entityErr.message);
+      }
+
+      await new Promise(r => setTimeout(r, DELAY_MS));
+    }
+
+    const durationMs = Date.now() - startTime;
+    await supabase.from('data_pulls').update({
+      status: 'completed', completed_at: new Date().toISOString(),
+      records_fetched: recordsFetched, records_updated: recordsUpdated
+    }).eq('id', pullId);
+
+    console.log(`[OpenCorporates] Pull ${pullId} completed: fetched=${recordsFetched}, updated=${recordsUpdated}`);
+    await sendIngestionEmail(pullId, {
+      source: 'opencorporates', pull_type: 'enrichment', status: 'completed',
+      recordsFetched, recordsCreated: 0, recordsUpdated, durationMs
+    });
+
+    return { pullId, recordsFetched, recordsUpdated };
+  } catch (err) {
+    const durationMs = Date.now() - startTime;
+    console.error(`[OpenCorporates] Pull ${pullId} failed:`, err.message);
+    await supabase.from('data_pulls').update({
+      status: 'failed', completed_at: new Date().toISOString(),
+      error_message: err.message, records_fetched: recordsFetched, records_updated: recordsUpdated
+    }).eq('id', pullId);
+    await sendIngestionEmail(pullId, {
+      source: 'opencorporates', pull_type: 'enrichment', status: 'failed',
+      recordsFetched, recordsCreated: 0, recordsUpdated, durationMs, errorMessage: err.message
+    });
+    throw err;
+  }
+}
+
+app.post('/api/ingest/opencorporates', requireAdmin, async (req, res) => {
+  try {
+    const { data: pull, error: pullErr } = await supabase
+      .from('data_pulls')
+      .insert({
+        source: 'opencorporates', pull_type: 'enrichment',
+        status: 'running', metadata: { max_requests: 190 }
+      })
+      .select('id')
+      .single();
+
+    if (pullErr) return res.status(500).json({ ok: false, error: 'Failed to create pull record' });
+
+    ingestOpenCorporates(pull.id).catch(err => {
+      console.error(`[OpenCorporates] Async error for pull ${pull.id}:`, err.message);
+    });
+
+    return res.json({ ok: true, pull_id: pull.id, message: 'OpenCorporates enrichment started' });
+  } catch (err) {
+    console.error('OpenCorporates endpoint error:', err);
+    return res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
+// ── OFAC SDN INGESTION ──────────────────────────────────────
+// Simple string similarity for fuzzy matching (Dice coefficient)
+function diceCoefficient(a, b) {
+  a = a.toLowerCase().trim();
+  b = b.toLowerCase().trim();
+  if (a === b) return 1;
+  if (a.length < 2 || b.length < 2) return 0;
+  const bigrams = new Map();
+  for (let i = 0; i < a.length - 1; i++) {
+    const bi = a.substring(i, i + 2);
+    bigrams.set(bi, (bigrams.get(bi) || 0) + 1);
+  }
+  let matches = 0;
+  for (let i = 0; i < b.length - 1; i++) {
+    const bi = b.substring(i, i + 2);
+    const count = bigrams.get(bi) || 0;
+    if (count > 0) {
+      bigrams.set(bi, count - 1);
+      matches++;
+    }
+  }
+  return (2.0 * matches) / (a.length - 1 + b.length - 1);
+}
+
+async function ingestOFAC(pullId) {
+  const startTime = Date.now();
+  let recordsFetched = 0;
+  let recordsCreated = 0;
+  let recordsUpdated = 0;
+  let flagsCreated = 0;
+  const MATCH_THRESHOLD = 0.85;
+
+  console.log(`[OFAC] Pull ${pullId} started`);
+
+  try {
+    // Download consolidated CSV
+    const csvUrl = 'https://www.treasury.gov/ofac/downloads/consolidated/cons_prim.csv';
+    const resp = await fetch(csvUrl);
+    if (!resp.ok) throw new Error(`OFAC CSV download failed: ${resp.status}`);
+
+    const csvText = await resp.text();
+    const lines = csvText.split('\n').filter(l => l.trim());
+    // cons_prim.csv has no header row; columns:
+    // 0: SDN_Name, 1: SDN_Type, 2: Program, 3: Title, 4: Call_Sign,
+    // 5: Vess_Type, 6: Tonnage, 7: GRT, 8: Vess_Flag, 9: Vess_Owner, 10: Remarks
+
+    console.log(`[OFAC] Downloaded ${lines.length} lines`);
+
+    // Parse and upsert OFAC entries
+    const ofacEntries = [];
+    for (const line of lines) {
+      // Simple CSV parse (handle quoted fields)
+      const fields = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') { inQuotes = !inQuotes; continue; }
+        if (ch === ',' && !inQuotes) { fields.push(current.trim()); current = ''; continue; }
+        current += ch;
+      }
+      fields.push(current.trim());
+
+      const sdnName = fields[0] || '';
+      if (!sdnName) continue;
+
+      ofacEntries.push({
+        sdn_name: sdnName,
+        sdn_type: fields[1] || null,
+        program: fields[2] || null,
+        title: fields[3] || null,
+        remarks: fields[10] || null,
+        source_url: csvUrl,
+        raw_data: { call_sign: fields[4], vess_type: fields[5], tonnage: fields[6], grt: fields[7], vess_flag: fields[8], vess_owner: fields[9] }
+      });
+    }
+
+    recordsFetched = ofacEntries.length;
+
+    // Batch upsert into ofac_entries (clear and reload for simplicity)
+    // Delete old entries first
+    await supabase.from('ofac_entries').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+    // Insert in batches of 500
+    for (let i = 0; i < ofacEntries.length; i += 500) {
+      const batch = ofacEntries.slice(i, i + 500);
+      const { error: insErr } = await supabase.from('ofac_entries').insert(batch);
+      if (insErr) {
+        console.warn(`[OFAC] Batch insert error at offset ${i}:`, insErr.message);
+      } else {
+        recordsCreated += batch.length;
+      }
+    }
+
+    console.log(`[OFAC] Loaded ${recordsCreated} OFAC entries, starting cross-match`);
+
+    // Cross-match against entities
+    const { data: entities, error: entErr } = await supabase
+      .from('entities')
+      .select('id, name');
+    if (entErr) throw new Error(`Entity query failed: ${entErr.message}`);
+
+    // Build OFAC name lookup (lowercase)
+    const ofacNames = ofacEntries.map(e => ({
+      name: e.sdn_name,
+      nameLower: e.sdn_name.toLowerCase().trim(),
+      program: e.program,
+      sdn_type: e.sdn_type
+    }));
+
+    for (const entity of (entities || [])) {
+      const entNameLower = entity.name.toLowerCase().trim();
+
+      for (const ofac of ofacNames) {
+        const score = diceCoefficient(entNameLower, ofac.nameLower);
+        if (score >= MATCH_THRESHOLD) {
+          // Check if flag already exists
+          const { data: existing } = await supabase
+            .from('flags')
+            .select('id')
+            .eq('entity_id', entity.id)
+            .eq('flag_type', 'debarment_match')
+            .eq('citation_source', 'OFAC SDN List')
+            .maybeSingle();
+
+          if (!existing) {
+            const { error: flagErr } = await supabase
+              .from('flags')
+              .insert({
+                entity_id: entity.id,
+                flag_type: 'debarment_match',
+                severity: 'critical',
+                score_contribution: 40,
+                citation_source: 'OFAC SDN List',
+                citation_url: 'https://www.treasury.gov/ofac/downloads/consolidated/cons_prim.csv',
+                citation_detail: `Matched OFAC SDN entry "${ofac.name}" (${ofac.sdn_type || 'unknown type'}, program: ${ofac.program || 'N/A'}) with similarity score ${score.toFixed(3)}`,
+                is_active: true
+              });
+            if (!flagErr) {
+              flagsCreated++;
+              console.log(`[OFAC] Flagged entity "${entity.name}" matching "${ofac.name}" (score: ${score.toFixed(3)})`);
+            }
+          }
+          break; // one flag per entity is enough
+        }
+      }
+    }
+
+    const durationMs = Date.now() - startTime;
+    await supabase.from('data_pulls').update({
+      status: 'completed', completed_at: new Date().toISOString(),
+      records_fetched: recordsFetched, records_created: recordsCreated,
+      records_updated: recordsUpdated,
+      metadata: { flags_created: flagsCreated }
+    }).eq('id', pullId);
+
+    console.log(`[OFAC] Pull ${pullId} completed: entries=${recordsCreated}, flags=${flagsCreated}`);
+    await sendIngestionEmail(pullId, {
+      source: 'ofac', pull_type: 'sdn_refresh', status: 'completed',
+      recordsFetched, recordsCreated, recordsUpdated: flagsCreated, durationMs
+    });
+
+    return { pullId, recordsFetched, recordsCreated, flagsCreated };
+  } catch (err) {
+    const durationMs = Date.now() - startTime;
+    console.error(`[OFAC] Pull ${pullId} failed:`, err.message);
+    await supabase.from('data_pulls').update({
+      status: 'failed', completed_at: new Date().toISOString(),
+      error_message: err.message, records_fetched: recordsFetched,
+      records_created: recordsCreated
+    }).eq('id', pullId);
+    await sendIngestionEmail(pullId, {
+      source: 'ofac', pull_type: 'sdn_refresh', status: 'failed',
+      recordsFetched, recordsCreated, recordsUpdated: 0, durationMs, errorMessage: err.message
+    });
+    throw err;
+  }
+}
+
+app.post('/api/ingest/ofac', requireAdmin, async (req, res) => {
+  try {
+    const { data: pull, error: pullErr } = await supabase
+      .from('data_pulls')
+      .insert({
+        source: 'ofac', pull_type: 'sdn_refresh',
+        status: 'running', metadata: {}
+      })
+      .select('id')
+      .single();
+
+    if (pullErr) return res.status(500).json({ ok: false, error: 'Failed to create pull record' });
+
+    ingestOFAC(pull.id).catch(err => {
+      console.error(`[OFAC] Async error for pull ${pull.id}:`, err.message);
+    });
+
+    return res.json({ ok: true, pull_id: pull.id, message: 'OFAC SDN ingestion started' });
+  } catch (err) {
+    console.error('OFAC endpoint error:', err);
+    return res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
 // ── START ─────────────────────────────────────────────────────
 app.listen(port, () => {
   console.log(`Arcane Tracer API running on port ${port}`);
