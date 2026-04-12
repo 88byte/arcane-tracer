@@ -367,6 +367,31 @@ async function sendIngestionEmail(pullId, { source, pull_type, status, recordsFe
   }
 }
 
+// ── RETRY HELPER ───────────────────────────────────────────
+async function fetchWithRetry(url, fetchOptions, retries = 3) {
+  const delays = [2000, 5000, 15000];
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const resp = await fetch(url, fetchOptions);
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error(`USASpending API error ${resp.status}: ${errText.slice(0, 200)}`);
+      }
+      return resp;
+    } catch (err) {
+      if (attempt < retries) {
+        const delay = delays[attempt] || 15000;
+        console.warn(`[USASpending] Fetch attempt ${attempt + 1} failed: ${err.message}. Retrying in ${delay}ms...`);
+        await new Promise(r => setTimeout(r, delay));
+      } else {
+        console.error(`[USASpending] All ${retries + 1} fetch attempts failed: ${err.message}`);
+        return null; // signal to skip this page
+      }
+    }
+  }
+  return null;
+}
+
 // Variant that uses an existing pull ID (for the async kickoff from the endpoint)
 async function ingestUSASpendingWithPull(pullId, options = {}) {
   const {
@@ -374,6 +399,7 @@ async function ingestUSASpendingWithPull(pullId, options = {}) {
     award_type = 'contracts',
     limit_per_page = 100,
     max_pages = 10,
+    start_page = 1,
     page_delay_ms = 200
   } = options;
 
@@ -381,8 +407,9 @@ async function ingestUSASpendingWithPull(pullId, options = {}) {
   let recordsFetched = 0;
   let recordsCreated = 0;
   let recordsUpdated = 0;
+  const endPage = start_page + max_pages - 1;
 
-  console.log(`[USASpending] Pull ${pullId} started: FY${fiscal_year} ${award_type}, max ${max_pages} pages`);
+  console.log(`[USASpending] Pull ${pullId} started: FY${fiscal_year} ${award_type}, pages ${start_page}-${endPage}`);
 
   try {
     const typeMap = {
@@ -394,7 +421,7 @@ async function ingestUSASpendingWithPull(pullId, options = {}) {
     };
     const awardTypes = typeMap[award_type] || typeMap.contracts;
 
-    for (let page = 1; page <= max_pages; page++) {
+    for (let page = start_page; page <= endPage; page++) {
       const body = {
         filters: {
           time_period: [{ start_date: `${fiscal_year}-10-01`, end_date: `${fiscal_year + 1}-09-30` }],
@@ -411,15 +438,15 @@ async function ingestUSASpendingWithPull(pullId, options = {}) {
         order: 'desc'
       };
 
-      const resp = await fetch('https://api.usaspending.gov/api/v2/search/spending_by_award/', {
+      const resp = await fetchWithRetry('https://api.usaspending.gov/api/v2/search/spending_by_award/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
 
-      if (!resp.ok) {
-        const errText = await resp.text();
-        throw new Error(`USASpending API error ${resp.status}: ${errText.slice(0, 200)}`);
+      if (!resp) {
+        console.warn(`[USASpending] Skipping page ${page} after all retries failed`);
+        continue;
       }
 
       const data = await resp.json();
@@ -509,11 +536,17 @@ async function ingestUSASpendingWithPull(pullId, options = {}) {
         }
       }
 
-      if (page % 10 === 0 || page === max_pages || results.length < limit_per_page) {
-        console.log(`[USASpending] ${options.pull_type || 'Pull'} FY${fiscal_year} ${award_type}: page ${page}/${max_pages}, ${recordsFetched} records so far`);
+      if (page % 10 === 0 || page === endPage || results.length < limit_per_page) {
+        console.log(`[USASpending] ${options.pull_type || 'Pull'} FY${fiscal_year} ${award_type}: page ${page}/${endPage}, ${recordsFetched} records so far`);
+        // Checkpoint progress to DB every 10 pages
+        await supabase.from('data_pulls').update({
+          records_fetched: recordsFetched,
+          records_created: recordsCreated,
+          records_updated: recordsUpdated
+        }).eq('id', pullId);
       }
 
-      if (page < max_pages && results.length > 0) {
+      if (page < endPage && results.length > 0) {
         await new Promise(r => setTimeout(r, page_delay_ms));
       }
     }
@@ -577,7 +610,7 @@ app.post('/api/ingest/backfill', requireAdmin, async (req, res) => {
       start_year = 2020,
       end_year = 2025,
       award_types = ['contracts', 'grants'],
-      max_pages_per_pull = 500
+      max_pages_per_pull = 100
     } = req.body || {};
 
     const pulls = [];
@@ -643,10 +676,12 @@ app.post('/api/ingest/backfill', requireAdmin, async (req, res) => {
 });
 
 // ── RESUME BACKFILL ENDPOINT ────────────────────────────────
-// Re-queues any backfill pulls stuck at "queued" after a worker restart.
+// Re-queues any backfill pulls stuck at "queued" or "running" (0 records),
+// and creates continuation pulls for "failed" ones starting from where they left off.
 app.post('/api/ingest/resume-backfill', requireAdmin, async (req, res) => {
   try {
-    const { data: stuckPulls, error: qErr } = await supabase
+    // 1. Grab queued pulls (never started)
+    const { data: queuedPulls, error: qErr } = await supabase
       .from('data_pulls')
       .select('id, metadata')
       .eq('source', 'usaspending')
@@ -655,22 +690,85 @@ app.post('/api/ingest/resume-backfill', requireAdmin, async (req, res) => {
       .order('created_at', { ascending: true });
 
     if (qErr) return res.status(500).json({ ok: false, error: 'Database query failed' });
-    if (!stuckPulls || stuckPulls.length === 0) {
-      return res.json({ ok: true, message: 'No queued backfill pulls found', resumed: 0 });
+
+    // 2. Grab failed pulls to create continuation pulls
+    const { data: failedPulls, error: fErr } = await supabase
+      .from('data_pulls')
+      .select('id, metadata, records_fetched')
+      .eq('source', 'usaspending')
+      .eq('pull_type', 'backfill')
+      .eq('status', 'failed')
+      .order('created_at', { ascending: true });
+
+    if (fErr) return res.status(500).json({ ok: false, error: 'Database query failed' });
+
+    const resumeItems = [];
+
+    // Add queued pulls directly
+    for (const p of (queuedPulls || [])) {
+      const maxPages = Math.min(p.metadata.max_pages || 500, 100);
+      resumeItems.push({ pullId: p.id, isNew: false, ...p.metadata, max_pages: maxPages });
     }
 
-    const pullIds = stuckPulls.map(p => ({ pullId: p.id, ...p.metadata }));
+    // For failed pulls, create new continuation pulls starting from where they left off
+    for (const p of (failedPulls || [])) {
+      const fetched = p.records_fetched || 0;
+      const startPage = Math.floor(fetched / 100) + 1; // 100 = limit_per_page
+      const originalMax = p.metadata.max_pages || 500;
+      const remainingPages = Math.min(originalMax - startPage + 1, 100);
+      if (remainingPages <= 0) continue; // already done
+
+      const { data: newPull, error: npErr } = await supabase
+        .from('data_pulls')
+        .insert({
+          source: 'usaspending',
+          pull_type: 'backfill',
+          status: 'queued',
+          metadata: {
+            fiscal_year: p.metadata.fiscal_year,
+            award_type: p.metadata.award_type,
+            max_pages: remainingPages,
+            start_page: startPage,
+            continued_from: p.id
+          }
+        })
+        .select('id')
+        .single();
+
+      if (npErr) {
+        console.error(`[Resume-Backfill] Failed to create continuation for ${p.id}:`, npErr.message);
+        continue;
+      }
+
+      // Mark old failed pull as superseded
+      await supabase.from('data_pulls').update({ status: 'superseded' }).eq('id', p.id);
+
+      resumeItems.push({
+        pullId: newPull.id,
+        isNew: true,
+        fiscal_year: p.metadata.fiscal_year,
+        award_type: p.metadata.award_type,
+        max_pages: remainingPages,
+        start_page: startPage
+      });
+    }
+
+    if (resumeItems.length === 0) {
+      return res.json({ ok: true, message: 'No pulls to resume', resumed: 0 });
+    }
 
     // Process sequentially in background
     (async () => {
-      for (const { pullId, fiscal_year, award_type, max_pages } of pullIds) {
+      for (const item of resumeItems) {
+        const { pullId, fiscal_year, award_type, max_pages, start_page } = item;
         try {
-          console.log(`[Resume-Backfill] Starting pull ${pullId}: FY${fiscal_year} ${award_type}`);
+          console.log(`[Resume-Backfill] Starting pull ${pullId}: FY${fiscal_year} ${award_type}${start_page ? ` from page ${start_page}` : ''}`);
           await supabase.from('data_pulls').update({ status: 'running' }).eq('id', pullId);
           await ingestUSASpendingWithPull(pullId, {
             fiscal_year,
             award_type,
-            max_pages: max_pages || 500,
+            max_pages: max_pages || 100,
+            start_page: start_page || 1,
             limit_per_page: 100,
             page_delay_ms: 500,
             pull_type: 'Backfill'
@@ -680,14 +778,20 @@ app.post('/api/ingest/resume-backfill', requireAdmin, async (req, res) => {
         }
         await new Promise(r => setTimeout(r, 500));
       }
-      console.log(`[Resume-Backfill] All ${pullIds.length} resumed pulls finished`);
+      console.log(`[Resume-Backfill] All ${resumeItems.length} resumed pulls finished`);
     })().catch(err => console.error('[Resume-Backfill] Fatal error:', err.message));
 
     return res.json({
       ok: true,
-      message: `Resumed ${pullIds.length} queued backfill pulls`,
-      resumed: pullIds.length,
-      pull_ids: pullIds.map(p => ({ pull_id: p.pullId, fiscal_year: p.fiscal_year, award_type: p.award_type }))
+      message: `Resumed ${resumeItems.length} backfill pulls`,
+      resumed: resumeItems.length,
+      pull_ids: resumeItems.map(p => ({
+        pull_id: p.pullId,
+        fiscal_year: p.fiscal_year,
+        award_type: p.award_type,
+        start_page: p.start_page || 1,
+        is_continuation: p.isNew || false
+      }))
     });
   } catch (err) {
     console.error('Resume-backfill endpoint error:', err);
