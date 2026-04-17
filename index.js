@@ -1,9 +1,14 @@
 require('dotenv').config();
 const crypto  = require('crypto');
+const fs      = require('fs');
+const path    = require('path');
+const https   = require('https');
 const express  = require('express');
 const cors     = require('cors');
 const { Resend } = require('resend');
 const { createClient } = require('@supabase/supabase-js');
+const unzipper = require('unzipper');
+const { parse: csvParseStream } = require('csv-parse');
 
 const app  = express();
 const port = process.env.PORT || 3000;
@@ -97,7 +102,7 @@ app.post('/access-request', async (req, res) => {
 
     if (dbError) {
       console.error('Supabase insert error:', dbError);
-      // Continue anyway — don't fail the user because of a DB issue
+      // Continue anyway, don't fail the user because of a DB issue
     }
 
     // ── NOTIFY YOU ────────────────────────────────────────────
@@ -105,7 +110,7 @@ app.post('/access-request', async (req, res) => {
     const { data: d1, error: e1 } = await resend.emails.send({
       from: 'Arcane Tracer <onboarding@resend.dev>',
       to: [process.env.OWNER_EMAIL],
-      subject: `[Access Request] ${level} — ${name}`,
+      subject: `[Access Request] ${level}: ${name}`,
       html: `
         <div style="font-family:'DM Sans',Arial,sans-serif;max-width:600px;margin:0 auto;background:#050F1E;color:#ffffff;padding:32px;border:1px solid rgba(0,87,255,0.2);">
           <div style="font-family:Arial,sans-serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#00D4FF;margin-bottom:16px;">ARCANE TRACER · NEW ACCESS REQUEST</div>
@@ -336,13 +341,19 @@ app.post('/api/ingest/usaspending', requireAdmin, async (req, res) => {
 });
 
 // ── INGESTION EMAIL NOTIFICATION ────────────────────────────
-async function sendIngestionEmail(pullId, { source, pull_type, status, recordsFetched, recordsCreated, recordsUpdated, durationMs, errorMessage }) {
+async function sendIngestionEmail(pullId, { source, pull_type, status, recordsFetched, recordsCreated, recordsUpdated, durationMs, errorMessage, apiCallsUsed, apiBudgetRemaining }) {
   try {
     const durationStr = durationMs
       ? `${Math.floor(durationMs / 60000)}m ${Math.floor((durationMs % 60000) / 1000)}s`
       : 'unknown';
     const statusEmoji = status === 'completed' ? 'OK' : 'FAILED';
     const subject = `[Arcane Tracer] Ingestion ${statusEmoji}: ${source} ${pull_type}`;
+    // SAM.gov daily budget surfacing: only rendered when the caller
+    // supplied apiCallsUsed (samgov, sam_exclusions, fapiis pulls).
+    // Format: "X api_calls used, Y budget remaining for today".
+    const budgetLine = (typeof apiCallsUsed === 'number')
+      ? `SAM.gov Budget: ${apiCallsUsed} api_calls used${typeof apiBudgetRemaining === 'number' ? `, ${apiBudgetRemaining} budget remaining for today` : ''}`
+      : null;
     const body = [
       `Pull ID: ${pullId}`,
       `Source: ${source}`,
@@ -352,6 +363,7 @@ async function sendIngestionEmail(pullId, { source, pull_type, status, recordsFe
       `Records Created: ${recordsCreated}`,
       `Records Updated: ${recordsUpdated}`,
       `Duration: ${durationStr}`,
+      budgetLine,
       errorMessage ? `Error: ${errorMessage}` : null
     ].filter(Boolean).join('\n');
 
@@ -422,9 +434,11 @@ async function ingestUSASpendingWithPull(pullId, options = {}) {
     const awardTypes = typeMap[award_type] || typeMap.contracts;
 
     for (let page = start_page; page <= endPage; page++) {
+      // US federal FY N runs Oct 1 of (N-1) through Sep 30 of N.
+      // e.g. FY2026 = 2025-10-01 to 2026-09-30.
       const body = {
         filters: {
-          time_period: [{ start_date: `${fiscal_year}-10-01`, end_date: `${fiscal_year + 1}-09-30` }],
+          time_period: [{ start_date: `${fiscal_year - 1}-10-01`, end_date: `${fiscal_year}-09-30` }],
           award_type_codes: awardTypes
         },
         fields: [
@@ -808,14 +822,21 @@ function requireCronSecret(req, res, next) {
   next();
 }
 
-// Daily at 3 AM ET: incremental pull of current FY contracts + grants
+// Daily at 3 AM ET: incremental pull of current FY contracts + grants,
+// plus OpenCorporates enrichment, OFAC SDN refresh, and SAM.gov enrichment.
 app.get('/api/cron/daily', requireCronSecret, async (req, res) => {
   try {
     const now = new Date();
+    // US federal fiscal year N starts Oct 1 of (N-1).
+    // In Oct-Dec we're in the NEXT calendar year's FY, so add 1.
+    // Jan-Sep we're in the CURRENT calendar year's FY, so don't add.
+    // The downstream ingestUSASpendingWithPull handles the Oct-1-to-Sep-30 window,
+    // so fy here is just the FY label.
     const fy = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
     const awardTypes = ['contracts', 'grants'];
-    const pullIds = [];
+    const usaspendingPullIds = [];
 
+    // 1. USASpending incremental pulls (contracts + grants)
     for (const awardType of awardTypes) {
       const { data: pull, error: pullErr } = await supabase
         .from('data_pulls')
@@ -828,14 +849,135 @@ app.get('/api/cron/daily', requireCronSecret, async (req, res) => {
         .select('id')
         .single();
       if (pullErr) continue;
-      pullIds.push(pull.id);
+      usaspendingPullIds.push(pull.id);
 
       ingestUSASpendingWithPull(pull.id, {
         fiscal_year: fy, award_type: awardType, max_pages: 10
       }).catch(err => console.error(`[Cron/Daily] ${awardType} failed:`, err.message));
     }
 
-    return res.json({ ok: true, type: 'daily', fiscal_year: fy, pull_ids: pullIds });
+    // 2. OpenCorporates removed from daily cron on 2026-04-16.
+    // Feature-flagged off pending commercial key (ODbL share-alike is
+    // incompatible with a paid Professional product). Endpoint
+    // /api/ingest/opencorporates is still reachable for manual runs but
+    // will no-op unless OPENCORPORATES_ENABLED=true.
+
+    // 3. OFAC SDN daily refresh
+    let ofacPullId = null;
+    {
+      const { data: ofacPull, error: ofacErr } = await supabase
+        .from('data_pulls')
+        .insert({
+          source: 'ofac',
+          pull_type: 'daily_sdn_refresh',
+          status: 'running',
+          metadata: {}
+        })
+        .select('id')
+        .single();
+      if (!ofacErr && ofacPull) {
+        ofacPullId = ofacPull.id;
+        ingestOFAC(ofacPull.id).catch(err =>
+          console.error('[Cron/Daily] OFAC failed:', err.message)
+        );
+      } else if (ofacErr) {
+        console.error('[Cron/Daily] OFAC pull row create failed:', ofacErr.message);
+      }
+    }
+
+    // 4. SAM.gov monthly Entity bulk extract (public V2 ZIP).
+    // Source swapped from API to monthly bulk download on 2026-04-16.
+    // The file publishes on the first Sunday of the month, so we fire
+    // ingestSAMGov only on the 1st and 15th of each month. Firing twice
+    // gives a safety net if the first attempt lands before the file is
+    // posted.
+    let samgovPullId = null;
+    {
+      const dayOfMonth = new Date().getUTCDate();
+      if (dayOfMonth === 1 || dayOfMonth === 15) {
+        const { data: samPull, error: samErr } = await supabase
+          .from('data_pulls')
+          .insert({
+            source: 'samgov',
+            pull_type: 'monthly_entity_extract',
+            status: 'running',
+            metadata: {}
+          })
+          .select('id')
+          .single();
+        if (!samErr && samPull) {
+          samgovPullId = samPull.id;
+          ingestSAMGov(samPull.id).catch(err =>
+            console.error('[Cron/Daily] SAM.gov failed:', err.message)
+          );
+        } else if (samErr) {
+          console.error('[Cron/Daily] SAM.gov pull row create failed:', samErr.message);
+        }
+      } else {
+        console.log(`[Cron/Daily] Skipping SAM.gov monthly entity extract (day ${dayOfMonth}, fires only on day 1 and 15).`);
+      }
+    }
+
+    // 5. SAM.gov Exclusions List daily refresh.
+    // Source: daily bulk Public V2 Exclusions extract from sam.gov/data-services
+    // (no API key, no login). Swapped from API on 2026-04-16.
+    let samExclusionsPullId = null;
+    {
+      const { data: sePull, error: seErr } = await supabase
+        .from('data_pulls')
+        .insert({
+          source: 'sam_exclusions',
+          pull_type: 'daily_refresh',
+          status: 'running',
+          metadata: {}
+        })
+        .select('id')
+        .single();
+      if (!seErr && sePull) {
+        samExclusionsPullId = sePull.id;
+        ingestSAMExclusions(sePull.id).catch(err =>
+          console.error('[Cron/Daily] SAM Exclusions failed:', err.message)
+        );
+      } else if (seErr) {
+        console.error('[Cron/Daily] SAM Exclusions pull row create failed:', seErr.message);
+      }
+    }
+
+    // 6. IRS 990 enrichment (ProPublica Nonprofit Explorer)
+    let irs990PullId = null;
+    {
+      const { data: irsPull, error: irsErr } = await supabase
+        .from('data_pulls')
+        .insert({
+          source: 'irs_990',
+          pull_type: 'daily_enrichment',
+          status: 'running',
+          metadata: {}
+        })
+        .select('id')
+        .single();
+      if (!irsErr && irsPull) {
+        irs990PullId = irsPull.id;
+        ingestIRS990(irsPull.id).catch(err =>
+          console.error('[Cron/Daily] IRS 990 failed:', err.message)
+        );
+      } else if (irsErr) {
+        console.error('[Cron/Daily] IRS 990 pull row create failed:', irsErr.message);
+      }
+    }
+
+    return res.json({
+      ok: true,
+      type: 'daily',
+      fiscal_year: fy,
+      pulls: {
+        usaspending: usaspendingPullIds,
+        ofac: ofacPullId,
+        samgov: samgovPullId,
+        sam_exclusions: samExclusionsPullId,
+        irs_990: irs990PullId
+      }
+    });
   } catch (err) {
     console.error('Cron daily error:', err);
     return res.status(500).json({ ok: false, error: 'Server error' });
@@ -846,6 +988,11 @@ app.get('/api/cron/daily', requireCronSecret, async (req, res) => {
 app.get('/api/cron/weekly', requireCronSecret, async (req, res) => {
   try {
     const now = new Date();
+    // US federal fiscal year N starts Oct 1 of (N-1).
+    // In Oct-Dec we're in the NEXT calendar year's FY, so add 1.
+    // Jan-Sep we're in the CURRENT calendar year's FY, so don't add.
+    // The downstream ingestUSASpendingWithPull handles the Oct-1-to-Sep-30 window,
+    // so fy here is just the FY label.
     const fy = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
     const awardTypes = ['contracts', 'grants'];
     const pullIds = [];
@@ -869,7 +1016,36 @@ app.get('/api/cron/weekly', requireCronSecret, async (req, res) => {
       }).catch(err => console.error(`[Cron/Weekly] ${awardType} failed:`, err.message));
     }
 
-    return res.json({ ok: true, type: 'weekly', fiscal_year: fy, pull_ids: pullIds });
+    // FAPIIS weekly refresh (federal contractor performance history).
+    // As of 2026-04-16 FAPIIS is no longer a separately listed SAM.gov
+    // data-services folder. FAPIIS-class signals (Responsibility/Qualification
+    // proceedings) now arrive via the SAM.gov Entity extract, and debarments
+    // via the SAM.gov Exclusions extract. The call below runs a no-op stub
+    // that marks the pull completed with a skipped flag so cron history
+    // stays consistent. See ingestFAPIIS for details.
+    let fapiisPullId = null;
+    {
+      const { data: fapPull, error: fapErr } = await supabase
+        .from('data_pulls')
+        .insert({
+          source: 'fapiis',
+          pull_type: 'weekly_refresh',
+          status: 'running',
+          metadata: {}
+        })
+        .select('id')
+        .single();
+      if (!fapErr && fapPull) {
+        fapiisPullId = fapPull.id;
+        ingestFAPIIS(fapPull.id).catch(err =>
+          console.error('[Cron/Weekly] FAPIIS failed:', err.message)
+        );
+      } else if (fapErr) {
+        console.error('[Cron/Weekly] FAPIIS pull row create failed:', fapErr.message);
+      }
+    }
+
+    return res.json({ ok: true, type: 'weekly', fiscal_year: fy, pull_ids: pullIds, fapiis: fapiisPullId });
   } catch (err) {
     console.error('Cron weekly error:', err);
     return res.status(500).json({ ok: false, error: 'Server error' });
@@ -947,24 +1123,53 @@ app.get('/api/awards/:entity_id', async (req, res) => {
 });
 
 // ── OPENCORPORATES INGESTION ────────────────────────────────
+// Feature-flagged off pending commercial key. Free tier is share-alike
+// (ODbL) and incompatible with a paid Professional product. Do not enable
+// without a non-share-alike commercial agreement.
 async function ingestOpenCorporates(pullId) {
+  if (process.env.OPENCORPORATES_ENABLED !== 'true') {
+    console.log('OpenCorporates ingestion disabled by feature flag');
+    await supabase.from('data_pulls').update({
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+      records_fetched: 0,
+      records_updated: 0,
+      metadata: { skipped: true, reason: 'feature_flag_off' }
+    }).eq('id', pullId);
+    return { skipped: true, reason: 'feature_flag_off' };
+  }
   const startTime = Date.now();
   let recordsFetched = 0;
   let recordsUpdated = 0;
   const MAX_REQUESTS = 190; // stay under 200/day free tier
   const DELAY_MS = 1200; // ~1.2s between requests to be safe
 
+  // Skip entities that were attempted (match or miss) in the last 30 days.
+  // Without this, every daily run re-tries known misses and burns rate budget.
+  const thirtyDaysAgoIso = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
   console.log(`[OpenCorporates] Pull ${pullId} started`);
 
   try {
-    // Get entities missing OpenCorporates data
-    const { data: entities, error: qErr } = await supabase
+    // Candidate entities: missing incorporation_date OR missing opencorporates_id.
+    // Fetch a generous pool and filter attempted-recently in JS. PostgREST .or()
+    // across jsonb key tests (is.null OR lt.<iso>) is finicky with mixed operators,
+    // so we over-fetch candidates and filter in JS to keep the logic clear and safe.
+    const FETCH_POOL = MAX_REQUESTS * 4;
+    const { data: rawEntities, error: qErr } = await supabase
       .from('entities')
       .select('id, name, incorporation_date, metadata')
       .or('incorporation_date.is.null,metadata->>opencorporates_id.is.null')
-      .limit(MAX_REQUESTS);
+      .limit(FETCH_POOL);
 
     if (qErr) throw new Error(`Entity query failed: ${qErr.message}`);
+
+    // Filter out entities attempted in the last 30 days (miss cache).
+    const entities = (rawEntities || []).filter(e => {
+      const attempted = e.metadata?.opencorporates_attempted_at;
+      if (!attempted) return true;
+      return attempted < thirtyDaysAgoIso;
+    }).slice(0, MAX_REQUESTS);
     if (!entities || entities.length === 0) {
       console.log('[OpenCorporates] No entities need enrichment');
       await supabase.from('data_pulls').update({
@@ -1011,7 +1216,22 @@ async function ingestOpenCorporates(pullId) {
           return ocName === entName;
         });
 
-        if (!match) continue;
+        if (!match) {
+          // Record the miss so the next daily run skips this entity for 30 days.
+          // Prevents rate-limit budget leak on known non-matches.
+          const missMetadata = {
+            ...(entity.metadata || {}),
+            opencorporates_attempted_at: new Date().toISOString()
+          };
+          const { error: missErr } = await supabase
+            .from('entities')
+            .update({ metadata: missMetadata, updated_at: new Date().toISOString() })
+            .eq('id', entity.id);
+          if (missErr) {
+            console.warn(`[OpenCorporates] Miss-mark failed for entity ${entity.id}:`, missErr.message);
+          }
+          continue;
+        }
 
         const co = match.company;
         const updates = {
@@ -1019,7 +1239,8 @@ async function ingestOpenCorporates(pullId) {
             ...(entity.metadata || {}),
             opencorporates_id: co.company_number,
             opencorporates_jurisdiction: co.jurisdiction_code,
-            opencorporates_fetched_at: new Date().toISOString()
+            opencorporates_fetched_at: new Date().toISOString(),
+            opencorporates_attempted_at: new Date().toISOString()
           },
           opencorporates_url: co.opencorporates_url || null,
           company_status: co.current_status || null,
@@ -1132,6 +1353,11 @@ app.post('/api/ingest/opencorporates', requireAdmin, async (req, res) => {
 });
 
 // ── OFAC SDN INGESTION ──────────────────────────────────────
+// TODO: long-term fix is to move fuzzy matching into Postgres via the pg_trgm
+// extension with a GIN index on entities.name_normalized (and a materialized
+// ofac_entries.name_normalized). The first-letter bucketing below is a stopgap
+// to avoid the O(N*M) blow-up on large tables.
+//
 // Simple string similarity for fuzzy matching (Dice coefficient)
 function diceCoefficient(a, b) {
   a = a.toLowerCase().trim();
@@ -1210,9 +1436,16 @@ async function ingestOFAC(pullId) {
 
     recordsFetched = ofacEntries.length;
 
-    // Batch upsert into ofac_entries (clear and reload for simplicity)
-    // Delete old entries first
-    await supabase.from('ofac_entries').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    // Insert-then-prune pattern: never leave the table empty during refresh.
+    // 1. Tag every new row with this run's batch_id (inside raw_data, no schema change).
+    // 2. Insert all new rows first (table now contains old + new).
+    // 3. Only after inserts succeed, delete rows NOT tagged with this batch_id.
+    // Readers always see a complete snapshot. If inserts fail mid-batch,
+    // old data survives.
+    const thisBatchId = `batch_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    for (const entry of ofacEntries) {
+      entry.raw_data = { ...(entry.raw_data || {}), batch_id: thisBatchId };
+    }
 
     // Insert in batches of 500
     for (let i = 0; i < ofacEntries.length; i += 500) {
@@ -1223,6 +1456,19 @@ async function ingestOFAC(pullId) {
       } else {
         recordsCreated += batch.length;
       }
+    }
+
+    // Prune previous-run rows only after new rows are in.
+    if (recordsCreated > 0) {
+      const { error: pruneErr } = await supabase
+        .from('ofac_entries')
+        .delete()
+        .or(`raw_data->>batch_id.is.null,raw_data->>batch_id.neq.${thisBatchId}`);
+      if (pruneErr) {
+        console.warn('[OFAC] Prune of previous batch failed:', pruneErr.message);
+      }
+    } else {
+      console.warn('[OFAC] No new rows inserted, skipping prune to preserve existing data');
     }
 
     console.log(`[OFAC] Loaded ${recordsCreated} OFAC entries, starting cross-match`);
@@ -1241,10 +1487,29 @@ async function ingestOFAC(pullId) {
       sdn_type: e.sdn_type
     }));
 
+    // First-letter bucket prefilter. At the 0.85 Dice threshold, matching names
+    // share almost all bigrams, which means they almost always share their first
+    // character. Bucketing by first letter drops search space by ~26x with no
+    // meaningful loss of recall. This is a JS-side stopgap; see pg_trgm TODO above.
+    const ofacByFirstChar = new Map();
+    for (const ofac of ofacNames) {
+      const key = ofac.nameLower.charAt(0);
+      if (!key) continue;
+      let bucket = ofacByFirstChar.get(key);
+      if (!bucket) {
+        bucket = [];
+        ofacByFirstChar.set(key, bucket);
+      }
+      bucket.push(ofac);
+    }
+
     for (const entity of (entities || [])) {
       const entNameLower = entity.name.toLowerCase().trim();
+      const firstChar = entNameLower.charAt(0);
+      if (!firstChar) continue;
+      const candidates = ofacByFirstChar.get(firstChar) || [];
 
-      for (const ofac of ofacNames) {
+      for (const ofac of candidates) {
         const score = diceCoefficient(entNameLower, ofac.nameLower);
         if (score >= MATCH_THRESHOLD) {
           // Check if flag already exists
@@ -1330,6 +1595,914 @@ app.post('/api/ingest/ofac', requireAdmin, async (req, res) => {
     return res.json({ ok: true, pull_id: pull.id, message: 'OFAC SDN ingestion started' });
   } catch (err) {
     console.error('OFAC endpoint error:', err);
+    return res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
+// ── SAM.GOV PUBLIC BULK EXTRACTS ────────────────────────────
+// As of 2026-04-16 Arcane Tracer ingests SAM.gov via the public bulk
+// extracts at https://sam.gov/data-services/ rather than the per-entity
+// API. No API key, no rate limits, no SAM.gov user account required.
+//
+// Entity Registration / Public V2: monthly ZIP containing a CSV with the
+// full public-tier entity view (legal business name, UEI, addresses,
+// NAICS, registration status, business types, SAM exclusion status
+// flag). Filename pattern SAM_PUBLIC_UTF-8_MONTHLY_V2_YYYYMMDD.ZIP,
+// published on or around the first Sunday of each month.
+//
+// Exclusions / Public V2: daily ZIP containing a CSV of current
+// debarments. Filename pattern SAM_Exclusions_Public_Extract_V2_YYDDD.ZIP
+// where YY is the 2-digit year and DDD is the 3-digit day of year.
+//
+// Download host: https://s3.amazonaws.com/falextracts/ (public S3
+// bucket fronted by sam.gov/data-services).
+// TODO: if the falextracts S3 bucket hostname changes, fall back to
+// scraping the sam.gov/data-services HTML listing to pull the current
+// filename, then downloading via the SAM.gov file-extract proxy at
+// https://sam.gov/api/prod/fileextractservices/v1/api/download/...
+//
+// Attribution: pre-2022 entity records originated in the legacy CAGE
+// system populated by Dun and Bradstreet. For any record with a
+// registrationDate before 2022-04-04, the frontend displays the D&B
+// courtesy attribution on the methodology page.
+//
+// Feature flag: SAM_GOV_ENABLED (default true). Gates both ingestSAMGov
+// and ingestSAMExclusions. Set to 'false' on Railway to bypass.
+
+// Helpers shared by both SAM bulk ingestors.
+const SAM_ENTITY_BUCKET_PREFIX = 'https://s3.amazonaws.com/falextracts/Entity%20Registration/Public%20V2/';
+const SAM_EXCLUSIONS_BUCKET_PREFIX = 'https://s3.amazonaws.com/falextracts/Exclusions/Public%20V2/';
+
+// Stream-download a URL to a local file path, following up to 5 redirects.
+function downloadToFile(url, destPath, redirectsLeft = 5) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, (resp) => {
+      if (resp.statusCode >= 300 && resp.statusCode < 400 && resp.headers.location) {
+        resp.resume();
+        if (redirectsLeft <= 0) return reject(new Error(`Too many redirects for ${url}`));
+        return resolve(downloadToFile(resp.headers.location, destPath, redirectsLeft - 1));
+      }
+      if (resp.statusCode !== 200) {
+        resp.resume();
+        return reject(new Error(`Download failed for ${url}: HTTP ${resp.statusCode}`));
+      }
+      const out = fs.createWriteStream(destPath);
+      resp.pipe(out);
+      out.on('finish', () => out.close(() => resolve(destPath)));
+      out.on('error', (err) => reject(err));
+      resp.on('error', (err) => reject(err));
+    });
+    req.on('error', (err) => reject(err));
+  });
+}
+
+// HEAD request to confirm a URL exists (200). Follows up to 5 redirects.
+function urlExists(url, redirectsLeft = 5) {
+  return new Promise((resolve) => {
+    const u = new URL(url);
+    const req = https.request({
+      hostname: u.hostname,
+      path: u.pathname + u.search,
+      method: 'HEAD'
+    }, (resp) => {
+      if (resp.statusCode >= 300 && resp.statusCode < 400 && resp.headers.location) {
+        if (redirectsLeft <= 0) return resolve(false);
+        return resolve(urlExists(resp.headers.location, redirectsLeft - 1));
+      }
+      resolve(resp.statusCode === 200);
+    });
+    req.on('error', () => resolve(false));
+    req.end();
+  });
+}
+
+// Best-effort safe temp-file cleanup. Swallow errors so cleanup never
+// masks the original error path.
+function safeUnlink(p) {
+  if (!p) return;
+  try {
+    if (fs.existsSync(p)) fs.unlinkSync(p);
+  } catch (e) {
+    console.warn(`[SAMBulk] Cleanup failed for ${p}: ${e.message}`);
+  }
+}
+
+// Compute the first Sunday of a given UTC (year, monthZeroIndexed).
+function firstSundayOfMonth(year, monthZeroIndexed) {
+  const d = new Date(Date.UTC(year, monthZeroIndexed, 1));
+  const dow = d.getUTCDay(); // 0 = Sunday
+  const dayOfMonth = dow === 0 ? 1 : 1 + (7 - dow);
+  return new Date(Date.UTC(year, monthZeroIndexed, dayOfMonth));
+}
+
+function formatYyyymmdd(date) {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
+  return `${y}${m}${d}`;
+}
+
+// Build the list of candidate Entity monthly filenames to try, most
+// likely first. Order: first Sunday of current month, first Sunday of
+// prior month, 1st of current month.
+function candidateEntityFilenames() {
+  const now = new Date();
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth();
+  const firstSunThisMonth = firstSundayOfMonth(year, month);
+  const firstSunPriorMonth = firstSundayOfMonth(
+    month === 0 ? year - 1 : year,
+    month === 0 ? 11 : month - 1
+  );
+  const firstOfMonth = new Date(Date.UTC(year, month, 1));
+  const dates = [firstSunThisMonth, firstSunPriorMonth, firstOfMonth];
+  return dates.map(d => `SAM_PUBLIC_UTF-8_MONTHLY_V2_${formatYyyymmdd(d)}.ZIP`);
+}
+
+// Build the list of candidate Exclusions daily filenames to try, most
+// likely first. Order: today, yesterday, day-before-yesterday.
+function candidateExclusionsFilenames() {
+  const filenames = [];
+  for (let offset = 0; offset < 3; offset++) {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - offset);
+    const yy = String(d.getUTCFullYear()).slice(-2);
+    const startOfYear = Date.UTC(d.getUTCFullYear(), 0, 1);
+    const dayOfYear = Math.floor((d.getTime() - startOfYear) / (24 * 60 * 60 * 1000)) + 1;
+    const ddd = String(dayOfYear).padStart(3, '0');
+    filenames.push(`SAM_Exclusions_Public_Extract_V2_${yy}${ddd}.ZIP`);
+  }
+  return filenames;
+}
+
+// Try each candidate filename. Returns { filename, url } of the first
+// one that HEADs 200, or null if none of them exist.
+async function resolveBulkFile(prefix, candidates) {
+  for (const filename of candidates) {
+    const url = prefix + filename;
+    if (await urlExists(url)) {
+      return { filename, url };
+    }
+  }
+  return null;
+}
+
+async function ingestSAMGov(pullId) {
+  // Feature flag: default on. Set SAM_GOV_ENABLED=false on Railway to bypass.
+  if (process.env.SAM_GOV_ENABLED === 'false') {
+    console.log('[SAMGov] Ingestion disabled by feature flag (SAM_GOV_ENABLED=false)');
+    await supabase.from('data_pulls').update({
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+      records_fetched: 0,
+      records_updated: 0,
+      metadata: { skipped: true, reason: 'feature_flag_off' }
+    }).eq('id', pullId);
+    return { pullId, skipped: true, reason: 'feature_flag_off' };
+  }
+
+  const startTime = Date.now();
+  let recordsFetched = 0;
+  let recordsCreated = 0;
+  let recordsUpdated = 0;
+  let tempZipPath = null;
+
+  console.log(`[SAMGov] Pull ${pullId} started (monthly bulk extract mode)`);
+
+  try {
+    // 1. Resolve the latest monthly filename.
+    const candidates = candidateEntityFilenames();
+    console.log(`[SAMGov] Candidate filenames: ${candidates.join(', ')}`);
+    const resolved = await resolveBulkFile(SAM_ENTITY_BUCKET_PREFIX, candidates);
+    if (!resolved) {
+      throw new Error(`No SAM Entity monthly bulk file found. Tried: ${candidates.join(', ')}`);
+    }
+    console.log(`[SAMGov] Using bulk file: ${resolved.filename}`);
+
+    await supabase.from('data_pulls').update({
+      metadata: { source_file: resolved.filename, source_url: resolved.url }
+    }).eq('id', pullId);
+
+    // 2. Stream-download the ZIP to /tmp.
+    tempZipPath = path.join('/tmp', `sam-entity-${Date.now()}.zip`);
+    await downloadToFile(resolved.url, tempZipPath);
+    const zipSizeBytes = fs.statSync(tempZipPath).size;
+    console.log(`[SAMGov] Downloaded ${zipSizeBytes} bytes to ${tempZipPath}`);
+
+    // 3 + 4. Stream-extract the first CSV from the ZIP through csv-parse.
+    // Upsert in batches of 500. Match on UEI.
+    const BATCH_SIZE = 500;
+    const nowIso = new Date().toISOString();
+    let batch = [];
+
+    const flushBatch = async (rows) => {
+      if (!rows.length) return;
+      // Look up which UEIs already exist so we can split into
+      // create vs update counters. Supabase upsert with onConflict
+      // handles the write path in a single call.
+      const ueis = rows.map(r => r.uei).filter(Boolean);
+      let existingSet = new Set();
+      if (ueis.length) {
+        const { data: existing, error: selErr } = await supabase
+          .from('entities')
+          .select('uei')
+          .in('uei', ueis);
+        if (selErr) {
+          console.warn(`[SAMGov] Existing-UEI lookup failed: ${selErr.message}`);
+        } else {
+          existingSet = new Set((existing || []).map(e => e.uei));
+        }
+      }
+      const { error: upErr } = await supabase
+        .from('entities')
+        .upsert(rows, { onConflict: 'uei' });
+      if (upErr) {
+        console.warn(`[SAMGov] Batch upsert failed: ${upErr.message}`);
+        return;
+      }
+      for (const r of rows) {
+        if (existingSet.has(r.uei)) recordsUpdated++;
+        else recordsCreated++;
+      }
+    };
+
+    await new Promise((resolve, reject) => {
+      const zipStream = fs.createReadStream(tempZipPath).pipe(unzipper.Parse());
+      let csvPiped = false;
+
+      zipStream.on('entry', (entry) => {
+        const entryName = entry.path;
+        if (!csvPiped && /\.csv$/i.test(entryName)) {
+          csvPiped = true;
+          console.log(`[SAMGov] Parsing CSV entry: ${entryName}`);
+          const parser = entry.pipe(csvParseStream({
+            columns: true,
+            skip_empty_lines: true,
+            relax_column_count: true,
+            trim: true
+          }));
+
+          parser.on('data', async (row) => {
+            recordsFetched++;
+            const uei = row['UEI'] || row['ueiSAM'] || row['SAM UEI'] || row['uei'] || null;
+            if (!uei) return;
+
+            // Helper to pull a value by trying several possible column
+            // name variants. SAM's monthly extract has historically
+            // shifted column labels. Supporting a handful of names keeps
+            // us resilient.
+            const pick = (...keys) => {
+              for (const k of keys) {
+                if (row[k] != null && String(row[k]).trim() !== '') return String(row[k]).trim();
+              }
+              return null;
+            };
+
+            const legalName = pick('Legal Business Name', 'legalBusinessName', 'LEGAL_BUSINESS_NAME');
+            const physicalAddress = {
+              line1: pick('Physical Address Line 1', 'physicalAddressLine1'),
+              line2: pick('Physical Address Line 2', 'physicalAddressLine2'),
+              city: pick('Physical Address City', 'physicalAddressCity', 'City'),
+              state: pick('Physical Address Province or State', 'physicalAddressStateOrProvinceCode', 'State'),
+              zip: pick('Physical Address Zip/Postal Code', 'physicalAddressZipPostalCode', 'ZIP'),
+              country: pick('Physical Address Country Code', 'physicalAddressCountryCode', 'Country')
+            };
+            const mailingAddress = {
+              line1: pick('Mailing Address Line 1', 'mailingAddressLine1'),
+              line2: pick('Mailing Address Line 2', 'mailingAddressLine2'),
+              city: pick('Mailing Address City', 'mailingAddressCity'),
+              state: pick('Mailing Address Province or State', 'mailingAddressStateOrProvinceCode'),
+              zip: pick('Mailing Address Zip/Postal Code', 'mailingAddressZipPostalCode'),
+              country: pick('Mailing Address Country Code', 'mailingAddressCountryCode')
+            };
+            const ein = pick('Taxpayer Identification Number', 'taxpayerIdentificationNumber', 'TIN');
+            const naicsPrimary = pick('Primary NAICS', 'primaryNaics', 'NAICS Code');
+            const registrationStatus = pick('Registration Status', 'registrationStatus');
+            const exclusionFlagRaw = pick('SAM Exclusion Status Flag', 'samExclusionStatusFlag', 'Exclusion Status Flag');
+            const exclusionFlag = exclusionFlagRaw == null ? null : /^(y|yes|true|1)$/i.test(exclusionFlagRaw);
+            const registrationDate = pick('Registration Date', 'registrationDate', 'Initial Registration Date');
+            const expirationDate = pick('Expiration Date', 'expirationDate', 'Registration Expiration Date');
+            const state = physicalAddress.state || pick('State');
+            const country = physicalAddress.country || pick('Country', 'Country Code') || 'US';
+
+            batch.push({
+              name: legalName || '(unknown)',
+              entity_type: 'contractor',
+              uei,
+              state,
+              country,
+              source: 'samgov',
+              source_id: uei,
+              address: { physical: physicalAddress, mailing: mailingAddress },
+              ein: ein || null,
+              naics_primary: naicsPrimary || null,
+              sam_registration_status: registrationStatus || null,
+              sam_exclusion_flag: exclusionFlag,
+              sam_registration_date: registrationDate || null,
+              sam_expiration_date: expirationDate || null,
+              metadata: {
+                sam_fetched_at: nowIso,
+                sam_source_file: resolved.filename
+              },
+              updated_at: nowIso
+            });
+
+            if (batch.length >= BATCH_SIZE) {
+              parser.pause();
+              const toFlush = batch;
+              batch = [];
+              try {
+                await flushBatch(toFlush);
+              } catch (e) {
+                console.warn(`[SAMGov] Flush error: ${e.message}`);
+              }
+              parser.resume();
+            }
+          });
+
+          parser.on('end', async () => {
+            try {
+              if (batch.length) {
+                const toFlush = batch;
+                batch = [];
+                await flushBatch(toFlush);
+              }
+              resolve();
+            } catch (e) {
+              reject(e);
+            }
+          });
+
+          parser.on('error', (err) => reject(err));
+        } else {
+          entry.autodrain();
+        }
+      });
+
+      zipStream.on('close', () => {
+        if (!csvPiped) reject(new Error('No CSV entry found in SAM Entity ZIP'));
+      });
+      zipStream.on('error', (err) => reject(err));
+    });
+
+    // 6. Cleanup temp file.
+    safeUnlink(tempZipPath);
+    tempZipPath = null;
+
+    const durationMs = Date.now() - startTime;
+    await supabase.from('data_pulls').update({
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+      records_fetched: recordsFetched,
+      records_created: recordsCreated,
+      records_updated: recordsUpdated,
+      metadata: {
+        source_file: resolved.filename,
+        source_url: resolved.url,
+        zip_size_bytes: zipSizeBytes
+      }
+    }).eq('id', pullId);
+
+    console.log(`[SAMGov] Pull ${pullId} completed: fetched=${recordsFetched}, created=${recordsCreated}, updated=${recordsUpdated}`);
+    await sendIngestionEmail(pullId, {
+      source: 'samgov', pull_type: 'monthly_entity_extract', status: 'completed',
+      recordsFetched, recordsCreated, recordsUpdated, durationMs
+    });
+
+    return { pullId, recordsFetched, recordsCreated, recordsUpdated };
+  } catch (err) {
+    safeUnlink(tempZipPath);
+    const durationMs = Date.now() - startTime;
+    console.error(`[SAMGov] Pull ${pullId} failed:`, err.message);
+    await supabase.from('data_pulls').update({
+      status: 'failed', completed_at: new Date().toISOString(),
+      error_message: err.message,
+      records_fetched: recordsFetched,
+      records_created: recordsCreated,
+      records_updated: recordsUpdated
+    }).eq('id', pullId);
+    await sendIngestionEmail(pullId, {
+      source: 'samgov', pull_type: 'monthly_entity_extract', status: 'failed',
+      recordsFetched, recordsCreated, recordsUpdated, durationMs, errorMessage: err.message
+    });
+    throw err;
+  }
+}
+
+app.post('/api/ingest/samgov', requireAdmin, async (req, res) => {
+  try {
+    const { data: pull, error: pullErr } = await supabase
+      .from('data_pulls')
+      .insert({
+        source: 'samgov', pull_type: 'monthly_entity_extract',
+        status: 'running', metadata: {}
+      })
+      .select('id')
+      .single();
+
+    if (pullErr) return res.status(500).json({ ok: false, error: 'Failed to create pull record' });
+
+    ingestSAMGov(pull.id).catch(err => {
+      console.error(`[SAMGov] Async error for pull ${pull.id}:`, err.message);
+    });
+
+    return res.json({ ok: true, pull_id: pull.id, message: 'SAM.gov monthly entity extract ingestion started' });
+  } catch (err) {
+    console.error('SAMGov endpoint error:', err);
+    return res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
+// ── SAM.GOV EXCLUSIONS LIST (DAILY BULK EXTRACT) ────────────
+// Authoritative federal debarment list (entities and individuals excluded
+// from federal contracts, grants, and assistance). Public dataset, no
+// commercial restrictions. Covers exclusions from all federal agencies
+// (GSA, DoD, HHS OIG, State, USDA, etc.).
+//
+// Source: daily Public V2 bulk ZIP extract from sam.gov/data-services,
+// served from https://s3.amazonaws.com/falextracts/Exclusions/Public%20V2/.
+// Full replacement each run, protected by the insert-then-prune pattern
+// borrowed from ingestOFAC so readers never see an empty table mid-refresh.
+async function ingestSAMExclusions(pullId) {
+  if (process.env.SAM_GOV_ENABLED === 'false') {
+    console.log('[SAMExclusions] Ingestion disabled by feature flag (SAM_GOV_ENABLED=false)');
+    await supabase.from('data_pulls').update({
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+      records_fetched: 0,
+      records_created: 0,
+      records_updated: 0,
+      metadata: { skipped: true, reason: 'feature_flag_off' }
+    }).eq('id', pullId);
+    return { pullId, skipped: true, reason: 'feature_flag_off' };
+  }
+
+  const startTime = Date.now();
+  let recordsFetched = 0;
+  let recordsCreated = 0;
+  let recordsUpdated = 0;
+  let tempZipPath = null;
+
+  console.log(`[SAMExclusions] Pull ${pullId} started (daily bulk extract mode)`);
+
+  try {
+    // 1. Resolve today's filename, falling back up to 2 days.
+    const candidates = candidateExclusionsFilenames();
+    console.log(`[SAMExclusions] Candidate filenames: ${candidates.join(', ')}`);
+    const resolved = await resolveBulkFile(SAM_EXCLUSIONS_BUCKET_PREFIX, candidates);
+    if (!resolved) {
+      throw new Error(`No SAM Exclusions daily bulk file found. Tried: ${candidates.join(', ')}`);
+    }
+    console.log(`[SAMExclusions] Using bulk file: ${resolved.filename}`);
+
+    await supabase.from('data_pulls').update({
+      metadata: { source_file: resolved.filename, source_url: resolved.url }
+    }).eq('id', pullId);
+
+    // 2. Stream-download.
+    tempZipPath = path.join('/tmp', `sam-exclusions-${Date.now()}.zip`);
+    await downloadToFile(resolved.url, tempZipPath);
+    const zipSizeBytes = fs.statSync(tempZipPath).size;
+    console.log(`[SAMExclusions] Downloaded ${zipSizeBytes} bytes to ${tempZipPath}`);
+
+    // 3. Stream-extract CSV and collect rows tagged with this run's batch_id.
+    const thisBatchId = `batch_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    const rows = [];
+
+    await new Promise((resolve, reject) => {
+      const zipStream = fs.createReadStream(tempZipPath).pipe(unzipper.Parse());
+      let csvPiped = false;
+
+      zipStream.on('entry', (entry) => {
+        const entryName = entry.path;
+        if (!csvPiped && /\.csv$/i.test(entryName)) {
+          csvPiped = true;
+          console.log(`[SAMExclusions] Parsing CSV entry: ${entryName}`);
+          const parser = entry.pipe(csvParseStream({
+            columns: true,
+            skip_empty_lines: true,
+            relax_column_count: true,
+            trim: true
+          }));
+
+          parser.on('data', (row) => {
+            recordsFetched++;
+            const pick = (...keys) => {
+              for (const k of keys) {
+                if (row[k] != null && String(row[k]).trim() !== '') return String(row[k]).trim();
+              }
+              return null;
+            };
+            const exclusionId = pick('Exclusion ID', 'exclusionId', 'Classification', 'SAM Number', 'exclusionNumber');
+            if (!exclusionId) return;
+
+            const address = {
+              line1: pick('Address 1', 'addressLine1'),
+              line2: pick('Address 2', 'addressLine2'),
+              city: pick('City'),
+              state: pick('State / Province', 'State'),
+              zip: pick('ZIP Code', 'Zip', 'zip'),
+              country: pick('Country')
+            };
+
+            rows.push({
+              exclusion_id: String(exclusionId),
+              name: pick('Name', 'exclusionName', 'Classification Name') || null,
+              dba_name: pick('DBA', 'dbaName') || null,
+              address,
+              exclusion_type: pick('Exclusion Type', 'exclusionType'),
+              exclusion_program: pick('Exclusion Program', 'exclusionProgram'),
+              excluding_agency: pick('Excluding Agency', 'excludingAgencyName', 'Agency'),
+              active_date: pick('Active Date', 'activeDate') || null,
+              termination_date: pick('Termination Date', 'terminationDate') || null,
+              raw_data: { ...row, batch_id: thisBatchId },
+              updated_at: new Date().toISOString()
+            });
+          });
+
+          parser.on('end', () => resolve());
+          parser.on('error', (err) => reject(err));
+        } else {
+          entry.autodrain();
+        }
+      });
+
+      zipStream.on('close', () => {
+        if (!csvPiped) reject(new Error('No CSV entry found in SAM Exclusions ZIP'));
+      });
+      zipStream.on('error', (err) => reject(err));
+    });
+
+    // 4. Insert-then-prune in batches of 500.
+    for (let i = 0; i < rows.length; i += 500) {
+      const batch = rows.slice(i, i + 500);
+      const { error: insErr } = await supabase
+        .from('sam_exclusions')
+        .upsert(batch, { onConflict: 'exclusion_id' });
+      if (insErr) {
+        console.warn(`[SAMExclusions] Batch upsert at offset ${i} failed: ${insErr.message}`);
+      } else {
+        recordsCreated += batch.length;
+      }
+    }
+
+    // Prune previous-run rows only after new rows are in. Rows not tagged
+    // with this batch_id in raw_data are stale and can be removed.
+    if (recordsCreated > 0) {
+      const { error: pruneErr } = await supabase
+        .from('sam_exclusions')
+        .delete()
+        .or(`raw_data->>batch_id.is.null,raw_data->>batch_id.neq.${thisBatchId}`);
+      if (pruneErr) {
+        console.warn('[SAMExclusions] Prune of previous batch failed:', pruneErr.message);
+      }
+    } else {
+      console.warn('[SAMExclusions] No new rows inserted, skipping prune to preserve existing data');
+    }
+
+    safeUnlink(tempZipPath);
+    tempZipPath = null;
+
+    const durationMs = Date.now() - startTime;
+    await supabase.from('data_pulls').update({
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+      records_fetched: recordsFetched,
+      records_created: recordsCreated,
+      records_updated: recordsUpdated,
+      metadata: {
+        source_file: resolved.filename,
+        source_url: resolved.url,
+        zip_size_bytes: zipSizeBytes,
+        batch_id: thisBatchId
+      }
+    }).eq('id', pullId);
+
+    console.log(`[SAMExclusions] Pull ${pullId} completed: fetched=${recordsFetched}, created=${recordsCreated}, updated=${recordsUpdated}`);
+    await sendIngestionEmail(pullId, {
+      source: 'sam_exclusions', pull_type: 'daily_refresh', status: 'completed',
+      recordsFetched, recordsCreated, recordsUpdated, durationMs
+    });
+
+    return { pullId, recordsFetched, recordsCreated, recordsUpdated };
+  } catch (err) {
+    safeUnlink(tempZipPath);
+    const durationMs = Date.now() - startTime;
+    console.error(`[SAMExclusions] Pull ${pullId} failed:`, err.message);
+    await supabase.from('data_pulls').update({
+      status: 'failed', completed_at: new Date().toISOString(),
+      error_message: err.message,
+      records_fetched: recordsFetched,
+      records_created: recordsCreated,
+      records_updated: recordsUpdated
+    }).eq('id', pullId);
+    await sendIngestionEmail(pullId, {
+      source: 'sam_exclusions', pull_type: 'daily_refresh', status: 'failed',
+      recordsFetched, recordsCreated, recordsUpdated, durationMs, errorMessage: err.message
+    });
+    throw err;
+  }
+}
+
+app.post('/api/ingest/samexclusions', requireAdmin, async (req, res) => {
+  try {
+    const { data: pull, error: pullErr } = await supabase
+      .from('data_pulls')
+      .insert({
+        source: 'sam_exclusions', pull_type: 'daily_refresh',
+        status: 'running', metadata: {}
+      })
+      .select('id')
+      .single();
+
+    if (pullErr) return res.status(500).json({ ok: false, error: 'Failed to create pull record' });
+
+    ingestSAMExclusions(pull.id).catch(err => {
+      console.error(`[SAMExclusions] Async error for pull ${pull.id}:`, err.message);
+    });
+
+    return res.json({ ok: true, pull_id: pull.id, message: 'SAM Exclusions ingestion started' });
+  } catch (err) {
+    console.error('SAMExclusions endpoint error:', err);
+    return res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
+// ── IRS 990 ENRICHMENT (VIA PROPUBLICA) ─────────────────────
+// ProPublica Nonprofit Explorer API exposes the IRS Form 990 dataset.
+// Free, public, no commercial restriction, no API key required.
+// Docs: https://projects.propublica.org/nonprofits/api
+//
+// We enrich entities that have an EIN (tax_id populated) with officer
+// names, compensation, filing status, and BMF revocation signals.
+// Officer names land in entity_officers; top-level filing signals land
+// in entities.metadata.
+//
+// Rate: ProPublica does not publish a strict limit but courtesy pacing
+// is required. We sleep 600ms between calls and cap per-run volume.
+//
+// TODO: improve nonprofit detection heuristic. Today we iterate entities
+// that already have an EIN-like tax_id. Longer-term we should also scan
+// names containing nonprofit signals (Foundation, Fund, Society, Inc
+// with 501c3 context) and attempt an EIN lookup.
+async function ingestIRS990(pullId) {
+  const startTime = Date.now();
+  let recordsFetched = 0;
+  let recordsUpdated = 0;
+  const MAX_REQUESTS = 300;
+  const DELAY_MS = 600;
+
+  // Skip entities attempted (match or miss) in the last 30 days.
+  // Mirrors the opencorporates_attempted_at miss-cache pattern.
+  const thirtyDaysAgoIso = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  console.log(`[IRS990] Pull ${pullId} started`);
+
+  try {
+    // Candidate entities: have a tax_id that looks like an EIN and have not
+    // been attempted in the last 30 days. We over-fetch and filter in JS
+    // because PostgREST .or() with jsonb timestamp comparison is finicky.
+    const { data: rawEntities, error: qErr } = await supabase
+      .from('entities')
+      .select('id, name, tax_id, metadata')
+      .not('tax_id', 'is', null)
+      .limit(MAX_REQUESTS * 4);
+
+    if (qErr) throw new Error(`Entity query failed: ${qErr.message}`);
+
+    const candidates = (rawEntities || []).filter(e => {
+      const attempted = e.metadata?.irs990_attempted_at;
+      if (!attempted) return true;
+      return attempted < thirtyDaysAgoIso;
+    }).slice(0, MAX_REQUESTS);
+
+    console.log(`[IRS990] ${candidates.length} entities eligible for IRS 990 enrichment`);
+
+    let requestCount = 0;
+    for (const entity of candidates) {
+      if (requestCount >= MAX_REQUESTS) break;
+
+      // Normalize EIN: ProPublica accepts digits only (strip dashes).
+      const ein = String(entity.tax_id || '').replace(/[^0-9]/g, '');
+      if (ein.length !== 9) {
+        // Not an EIN shape; mark attempted so we do not re-check for 30 days.
+        const missMeta = {
+          ...(entity.metadata || {}),
+          irs990_attempted_at: new Date().toISOString(),
+          irs990_skip_reason: 'tax_id_not_ein_shape'
+        };
+        await supabase.from('entities')
+          .update({ metadata: missMeta, updated_at: new Date().toISOString() })
+          .eq('id', entity.id);
+        continue;
+      }
+
+      try {
+        const url = `https://projects.propublica.org/nonprofits/api/v2/organizations/${ein}.json`;
+        const resp = await fetch(url);
+        requestCount++;
+        recordsFetched++;
+
+        if (resp.status === 404) {
+          // Not in the Nonprofit Explorer dataset. Mark attempted.
+          const missMeta = {
+            ...(entity.metadata || {}),
+            irs990_attempted_at: new Date().toISOString(),
+            irs990_skip_reason: 'not_in_propublica'
+          };
+          await supabase.from('entities')
+            .update({ metadata: missMeta, updated_at: new Date().toISOString() })
+            .eq('id', entity.id);
+          await new Promise(r => setTimeout(r, DELAY_MS));
+          continue;
+        }
+
+        if (!resp.ok) {
+          console.warn(`[IRS990] ${ein} returned ${resp.status}`);
+          await new Promise(r => setTimeout(r, DELAY_MS));
+          continue;
+        }
+
+        const data = await resp.json();
+        const org = data?.organization || {};
+        const filings = data?.filings_with_data || [];
+        const latestFiling = filings[0] || null;
+
+        // Revocation signal from IRS BMF (organization.revocation_date).
+        const revocationDate = org.revocation_date || null;
+        const subseccd = org.subseccd || null; // 501(c) subsection
+
+        // Officers: typically on each filing record. Extract from latest.
+        // The ProPublica response nests officers differently depending on
+        // filing year. Handle both shapes defensively.
+        const officers = [];
+        const filingForOfficers = latestFiling || {};
+        const rawOfficers = filingForOfficers.officers
+          || filingForOfficers.officer_names
+          || [];
+        for (const off of rawOfficers) {
+          officers.push({
+            name: off.name || off.officer_name || null,
+            title: off.title || off.officer_title || null,
+            compensation: off.compensation || off.total_compensation || null
+          });
+        }
+
+        // Persist officers.
+        for (const off of officers) {
+          if (!off.name) continue;
+          const { error: offErr } = await supabase
+            .from('entity_officers')
+            .insert({
+              entity_id: entity.id,
+              officer_name: off.name,
+              title: off.title,
+              compensation: off.compensation != null ? Number(off.compensation) : null,
+              source: 'irs_990_propublica',
+              filing_year: latestFiling?.tax_prd_yr || latestFiling?.tax_period || null,
+              raw_data: off
+            });
+          if (offErr) {
+            console.warn(`[IRS990] Officer insert failed for entity ${entity.id}: ${offErr.message}`);
+          }
+        }
+
+        // Persist filing/BMF signals on the entity record.
+        const updates = {
+          metadata: {
+            ...(entity.metadata || {}),
+            irs990_attempted_at: new Date().toISOString(),
+            irs990_fetched_at: new Date().toISOString(),
+            irs990_latest_filing_date: latestFiling?.tax_prd || latestFiling?.tax_period || null,
+            irs990_total_revenue: latestFiling?.totrevenue ?? null,
+            irs990_total_expenses: latestFiling?.totfuncexpns ?? null,
+            irs_revocation_date: revocationDate,
+            irs_subsection: subseccd
+          },
+          updated_at: new Date().toISOString()
+        };
+
+        const { error: upErr } = await supabase
+          .from('entities')
+          .update(updates)
+          .eq('id', entity.id);
+
+        if (upErr) {
+          console.warn(`[IRS990] Update failed for entity ${entity.id}: ${upErr.message}`);
+        } else {
+          recordsUpdated++;
+        }
+      } catch (entityErr) {
+        console.warn(`[IRS990] Error processing "${entity.name}": ${entityErr.message}`);
+      }
+
+      await new Promise(r => setTimeout(r, DELAY_MS));
+    }
+
+    const durationMs = Date.now() - startTime;
+    await supabase.from('data_pulls').update({
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+      records_fetched: recordsFetched,
+      records_updated: recordsUpdated
+    }).eq('id', pullId);
+
+    console.log(`[IRS990] Pull ${pullId} completed: fetched=${recordsFetched}, updated=${recordsUpdated}`);
+    await sendIngestionEmail(pullId, {
+      source: 'irs_990', pull_type: 'enrichment', status: 'completed',
+      recordsFetched, recordsCreated: 0, recordsUpdated, durationMs
+    });
+
+    return { pullId, recordsFetched, recordsUpdated };
+  } catch (err) {
+    const durationMs = Date.now() - startTime;
+    console.error(`[IRS990] Pull ${pullId} failed:`, err.message);
+    await supabase.from('data_pulls').update({
+      status: 'failed', completed_at: new Date().toISOString(),
+      error_message: err.message, records_fetched: recordsFetched, records_updated: recordsUpdated
+    }).eq('id', pullId);
+    await sendIngestionEmail(pullId, {
+      source: 'irs_990', pull_type: 'enrichment', status: 'failed',
+      recordsFetched, recordsCreated: 0, recordsUpdated, durationMs, errorMessage: err.message
+    });
+    throw err;
+  }
+}
+
+app.post('/api/ingest/irs990', requireAdmin, async (req, res) => {
+  try {
+    const { data: pull, error: pullErr } = await supabase
+      .from('data_pulls')
+      .insert({
+        source: 'irs_990', pull_type: 'enrichment',
+        status: 'running', metadata: {}
+      })
+      .select('id')
+      .single();
+
+    if (pullErr) return res.status(500).json({ ok: false, error: 'Failed to create pull record' });
+
+    ingestIRS990(pull.id).catch(err => {
+      console.error(`[IRS990] Async error for pull ${pull.id}:`, err.message);
+    });
+
+    return res.json({ ok: true, pull_id: pull.id, message: 'IRS 990 enrichment started' });
+  } catch (err) {
+    console.error('IRS990 endpoint error:', err);
+    return res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
+// ── FAPIIS INGESTION (STUB) ─────────────────────────────────
+// Federal Awardee Performance and Integrity Information System.
+// As of 2026-04-16, FAPIIS is no longer a separately listed SAM.gov
+// data-services folder. FAPIIS-class signals are now surfaced through
+// two other feeds that Arcane Tracer already ingests:
+//   1. Responsibility/Qualification proceedings arrive via the SAM.gov
+//      Entity monthly extract (ingestSAMGov).
+//   2. Debarments arrive via the SAM.gov daily Exclusions extract
+//      (ingestSAMExclusions).
+// fapiis.gov remains the record of truth for public browsing but is not
+// offered as a bulk file. We keep this function and its endpoint as a
+// thin stub so cron history, feature wiring, and downstream callers all
+// continue to work without change. The stub marks the pull completed
+// with a skipped flag.
+async function ingestFAPIIS(pullId) {
+  console.log('[FAPIIS] Standalone FAPIIS pull not required; signals are embedded in SAM Entity and Exclusions extracts.');
+  await supabase.from('data_pulls').update({
+    status: 'completed',
+    completed_at: new Date().toISOString(),
+    records_fetched: 0,
+    records_updated: 0,
+    metadata: {
+      skipped: true,
+      reason: 'fapiis_folded_into_sam_extracts',
+      note: 'Responsibility/Qualification proceedings arrive via SAM Entity extract; debarments via SAM Exclusions extract.'
+    }
+  }).eq('id', pullId);
+  return { pullId, skipped: true };
+}
+
+app.post('/api/ingest/fapiis', requireAdmin, async (req, res) => {
+  try {
+    const { data: pull, error: pullErr } = await supabase
+      .from('data_pulls')
+      .insert({
+        source: 'fapiis', pull_type: 'weekly_refresh',
+        status: 'running', metadata: {}
+      })
+      .select('id')
+      .single();
+
+    if (pullErr) return res.status(500).json({ ok: false, error: 'Failed to create pull record' });
+
+    ingestFAPIIS(pull.id).catch(err => {
+      console.error(`[FAPIIS] Async error for pull ${pull.id}:`, err.message);
+    });
+
+    return res.json({ ok: true, pull_id: pull.id, message: 'FAPIIS ingestion started' });
+  } catch (err) {
+    console.error('FAPIIS endpoint error:', err);
     return res.status(500).json({ ok: false, error: 'Server error' });
   }
 });

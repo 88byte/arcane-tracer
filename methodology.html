@@ -274,55 +274,51 @@ footer{background:var(--void);border-top:1px solid var(--bdr-dark);padding:28px 
 
     <p class="m-body">Every data point Arcane Tracer uses comes from official public government databases. We do not scrape private sites, buy commercial data lists, or accept user-submitted information as input to risk scoring. If we cannot source a claim to a specific public record, it does not appear in our output.</p>
 
+    <h3 class="m-h3">Data sources</h3>
+    <p class="m-body">The table below lists each source we rely on, what we pull from it, its license or terms, any required attribution, and how often we refresh it. Every source is a public federal dataset. We do not use commercial, share-alike, or license-restricted data in the Professional product.</p>
+
     <div class="source-grid">
       <div class="source-card">
         <div class="source-live">Live</div>
         <div class="source-name">USASpending.gov</div>
-        <div class="source-use">All federal contracts, grants, loans, and direct payments. The primary source for the anomaly detection feed.</div>
-        <div class="source-limit">Known limitation: some programs have a 30 to 90 day reporting lag on new awards.</div>
+        <div class="source-use">All federal contracts, grants, loans, and direct payments. Primary source for the anomaly detection feed.</div>
+        <div class="source-limit">License: public domain (U.S. Treasury, DATA Act). Refresh: daily. Attribution: "Source: USAspending.gov, U.S. Department of the Treasury."</div>
       </div>
       <div class="source-card">
         <div class="source-live">Live</div>
-        <div class="source-name">OpenCorporates</div>
-        <div class="source-use">200M+ company records across 140 jurisdictions. Incorporation dates, registered agents, officers, addresses, and status.</div>
-        <div class="source-limit">Known limitation: not all states update in real time. Registry data can lag by weeks in some jurisdictions.</div>
+        <div class="source-name">SAM.gov public monthly Entity extract (bulk download)</div>
+        <div class="source-use">Federal contractor registration: legal business name, UEI, address, registration status, NAICS, SAM exclusions flag.</div>
+        <div class="source-limit">License: public. Refresh: monthly. Attribution (pre-2022 records only): "Certain historical entity data courtesy of Dun and Bradstreet."</div>
+      </div>
+      <div class="source-card">
+        <div class="source-live">Live</div>
+        <div class="source-name">SAM.gov daily Exclusions extract (bulk download)</div>
+        <div class="source-use">Authoritative federal debarment list. Entities and individuals excluded from federal contracts, grants, and assistance.</div>
+        <div class="source-limit">License: public, no commercial restriction. Refresh: daily.</div>
       </div>
       <div class="source-card">
         <div class="source-live">Live</div>
         <div class="source-name">OFAC SDN List</div>
-        <div class="source-use">US Treasury's Specially Designated Nationals list. Every entity in every network is cross-referenced daily.</div>
-        <div class="source-limit">Known limitation: covers US-designated sanctions only. Does not include EU or UN sanctions lists.</div>
+        <div class="source-use">U.S. Treasury Specially Designated Nationals list. Every entity and every officer in every network is cross-referenced daily.</div>
+        <div class="source-limit">License: public domain (U.S. Treasury). Refresh: daily. Required disclaimer: a name match does not indicate that this entity is sanctioned, blocked, or the same person as the listed individual or organization. Potential matches require independent verification.</div>
       </div>
       <div class="source-card">
         <div class="source-live">Live</div>
-        <div class="source-name">SEC EDGAR</div>
-        <div class="source-use">All SEC filings for public companies. Beneficial ownership disclosures and financial statements.</div>
-        <div class="source-limit">Known limitation: only covers SEC-registered entities. Private companies are not included.</div>
+        <div class="source-name">IRS Form 990 (via ProPublica Nonprofit Explorer)</div>
+        <div class="source-use">Nonprofit officer names, compensation, annual 990 filings, and IRS Business Master File revocation status. Used for payment-spike context and officer matching.</div>
+        <div class="source-limit">License: public domain (IRS). Refresh: on IRS publication cadence. Attribution: "Nonprofit data from IRS Form 990 filings via ProPublica Nonprofit Explorer."</div>
       </div>
       <div class="source-card">
         <div class="source-live">Live</div>
-        <div class="source-name">CourtListener</div>
-        <div class="source-use">Millions of federal court records. Civil suits, bankruptcies, and criminal cases searchable by entity name.</div>
-        <div class="source-limit">Known limitation: not all federal courts are current. Some records are sealed or delayed.</div>
+        <div class="source-name">FAPIIS</div>
+        <div class="source-use">Federal Awardee Performance and Integrity Information System. Contractor performance history: terminations for cause, non-responsibility determinations, and DOJ settlements.</div>
+        <div class="source-limit">License: public. Refresh: weekly.</div>
       </div>
-      <div class="source-card">
-        <div class="source-live">Live</div>
-        <div class="source-name">State Business Registries</div>
-        <div class="source-use">Corporate status, dissolution dates, and officer changes from all 50 states.</div>
-        <div class="source-limit">Known limitation: quality and timeliness of data varies significantly by state.</div>
-      </div>
-      <div class="source-card">
-        <div class="source-live">Live</div>
-        <div class="source-name">IRS Exempt Organizations</div>
-        <div class="source-use">Nonprofit status, revocations, and annual filings. Critical for identifying organizations that lost tax-exempt status.</div>
-        <div class="source-limit">Known limitation: revocations may not appear in the database for 30 to 60 days after they occur.</div>
-      </div>
-      <div class="source-card">
-        <div class="source-live" style="color:var(--gold);--low:var(--gold);">Coming Soon</div>
-        <div class="source-name">FEC Campaign Finance</div>
-        <div class="source-use">Federal campaign contribution records for mapping political connections in financial networks.</div>
-        <div class="source-limit">In development. Not yet active in the scoring engine.</div>
-      </div>
+    </div>
+
+    <div class="callout callout-note">
+      <div class="callout-title">Coverage</div>
+      <div class="callout-body">Coverage is deepest for federal contractors and tax-exempt organizations. Private entities without a federal-spending footprint are outside the scope of this analysis.</div>
     </div>
 
     <div class="callout callout-note">
