@@ -1539,8 +1539,8 @@ app.post('/api/ingest/ofac', requireAdmin, async (req, res) => {
 // Free, public, no commercial restriction, no API key required.
 // Docs: https://projects.propublica.org/nonprofits/api
 //
-// We enrich entities that have an EIN (tax_id populated) with officer
-// names, compensation, filing status, and BMF revocation signals.
+// We enrich entities that have an EIN populated with officer names,
+// compensation, filing status, and BMF revocation signals.
 // Officer names land in entity_officers; top-level filing signals land
 // in entities.metadata.
 //
@@ -1548,7 +1548,7 @@ app.post('/api/ingest/ofac', requireAdmin, async (req, res) => {
 // is required. We sleep 600ms between calls and cap per-run volume.
 //
 // TODO: improve nonprofit detection heuristic. Today we iterate entities
-// that already have an EIN-like tax_id. Longer-term we should also scan
+// that already have an EIN populated. Longer-term we should also scan
 // names containing nonprofit signals (Foundation, Fund, Society, Inc
 // with 501c3 context) and attempt an EIN lookup.
 async function ingestIRS990(pullId) {
@@ -1565,13 +1565,13 @@ async function ingestIRS990(pullId) {
   console.log(`[IRS990] Pull ${pullId} started`);
 
   try {
-    // Candidate entities: have a tax_id that looks like an EIN and have not
-    // been attempted in the last 30 days. We over-fetch and filter in JS
-    // because PostgREST .or() with jsonb timestamp comparison is finicky.
+    // Candidate entities: have an EIN populated and have not been attempted
+    // in the last 30 days. We over-fetch and filter in JS because PostgREST
+    // .or() with jsonb timestamp comparison is finicky.
     const { data: rawEntities, error: qErr } = await supabase
       .from('entities')
-      .select('id, name, tax_id, metadata')
-      .not('tax_id', 'is', null)
+      .select('id, name, ein, metadata')
+      .not('ein', 'is', null)
       .limit(MAX_REQUESTS * 4);
 
     if (qErr) throw new Error(`Entity query failed: ${qErr.message}`);
@@ -1589,13 +1589,13 @@ async function ingestIRS990(pullId) {
       if (requestCount >= MAX_REQUESTS) break;
 
       // Normalize EIN: ProPublica accepts digits only (strip dashes).
-      const ein = String(entity.tax_id || '').replace(/[^0-9]/g, '');
+      const ein = String(entity.ein || '').replace(/[^0-9]/g, '');
       if (ein.length !== 9) {
         // Not an EIN shape; mark attempted so we do not re-check for 30 days.
         const missMeta = {
           ...(entity.metadata || {}),
           irs990_attempted_at: new Date().toISOString(),
-          irs990_skip_reason: 'tax_id_not_ein_shape'
+          irs990_skip_reason: 'ein_not_9_digits'
         };
         await supabase.from('entities')
           .update({ metadata: missMeta, updated_at: new Date().toISOString() })
